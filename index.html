@@ -265,7 +265,8 @@
     accounts:{ open:false, myPassword:"", myPasswordSaving:false, myPasswordMsg:"", forms:{}, lastCreated:null },
     upcoming:{ open:false, newDate:"", newName:"", newNotes:"", creating:false, error:"" },
     decklistEdit:null,
-    gallery:{ open:false, tid:null, photos:[], loading:false, error:"", uploading:false, viewIndex:null }
+    gallery:{ open:false, tid:null, photos:[], loading:false, error:"", uploading:false, viewIndex:null },
+    updateEmail:{ open:false, subject:"", message:"", sending:false, error:"", success:null }
   };
 
   function escapeHtml(s){
@@ -428,6 +429,7 @@
     if(writable){
       actions += '<button class="btn btn-primary" data-action="open-create">+ Nueva fecha</button>';
       actions += '<button class="btn btn-ghost" data-action="open-settings" title="Configurar puntos">⚙︎</button>';
+      actions += '<button class="btn btn-ghost btn-sm" data-action="open-update-email">Novedades</button>';
     }
     if(currentUser){
       var meName = currentPlayerName();
@@ -942,6 +944,12 @@
             '<button type="submit" class="btn btn-sm" '+(f.saving?"disabled":"")+'>'+(f.saving?"Guardando…":(p.hasAccess?"Actualizar acceso":"Crear acceso"))+'</button>'+
           '</form>'+
           (f.error? '<div class="field-error" style="margin-top:8px">'+escapeHtml(f.error)+'</div>':'')+
+          (!p.hasAccess? (
+            '<form onsubmit="return window.__submitNotifyEmail(\''+p.id+'\',event)" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">'+
+              '<div class="field" style="flex:1 1 200px"><label>O solo un email para mandarle novedades (sin acceso)</label><input type="email" name="notify" value="'+escapeHtml(p.notifyEmail)+'" placeholder="opcional"></div>'+
+              '<button type="submit" class="btn btn-sm btn-ghost">Guardar</button>'+
+            '</form>'
+          ) : '')+
         '</div>';
       }).join("");
       playerSection = (last? (
@@ -1044,6 +1052,25 @@
       '</div></div>';
   }
 
+  function renderUpdateEmailModal(){
+    var u = ui.updateEmail;
+    if(!u || !u.open) return "";
+    return '<div class="modal-backdrop" data-action="backdrop-update-email">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:520px">'+
+      '<h3>Mandar novedades</h3>'+
+      '<div class="settings-hint">Se manda por mail (en copia oculta) a todos los jugadores con cuenta, o con un email de aviso cargado en "Accesos".</div>'+
+      '<form onsubmit="return window.__submitUpdateEmail(event)">'+
+      '<div class="field full" style="margin-bottom:10px"><label>Asunto</label><input type="text" required value="'+escapeHtml(u.subject)+'" oninput="window.__updateUpdateEmailDraft(\'subject\',this.value)"></div>'+
+      '<div class="field full" style="margin-bottom:10px"><label>Mensaje</label><textarea rows="8" required style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text)" oninput="window.__updateUpdateEmailDraft(\'message\',this.value)">'+escapeHtml(u.message)+'</textarea></div>'+
+      (u.error? '<div class="field-error">'+escapeHtml(u.error)+'</div>':'')+
+      (u.success!=null? '<div class="settings-hint">'+(u.successTest? "Te mandamos la prueba a tu email. Revisalo y, cuando esté como querés, mandalo a todos." : "Enviado a "+u.success+" destinatario"+(u.success===1?"":"s")+".")+'</div>':'')+
+      '<div class="modal-actions">'+
+        '<button type="button" class="btn" data-action="close-update-email">Cerrar</button>'+
+        '<button type="button" class="btn btn-ghost" '+(u.sending?"disabled":"")+' onclick="window.__submitUpdateEmail(event,true)">'+(u.sending?"Enviando…":"Mandarme una prueba")+'</button>'+
+        '<button type="submit" class="btn btn-primary" '+(u.sending?"disabled":"")+'>'+(u.sending?"Enviando…":"Enviar a todos")+'</button>'+
+      '</div></form></div></div>';
+  }
+
   function renderApp(state, route){
     var scoped = Object.assign({}, state, {
       tournaments: tournamentsForFormat(state, route.format),
@@ -1060,7 +1087,7 @@
     return renderTopbar(route)+
       '<main>'+main+'</main>'+
       '<footer class="credit">Magic Delta · Ligas de Magic Zarate/Campana</footer>'+
-      renderModal(scoped)+renderSettings(scoped)+renderPhotoModal(scoped)+renderConfirmModal()+renderLoginModal()+renderAccountsModal(scoped)+renderUpcomingModal(scoped)+renderGalleryModal(scoped)+
+      renderModal(scoped)+renderSettings(scoped)+renderPhotoModal(scoped)+renderLoginModal()+renderAccountsModal(scoped)+renderUpcomingModal(scoped)+renderGalleryModal(scoped)+renderUpdateEmailModal()+renderConfirmModal()+
       (ui.toast? '<div class="toast">'+escapeHtml(ui.toast)+'</div>':'');
   }
 
@@ -1087,6 +1114,7 @@
   var SUPABASE_URL = "https://oqammxtavbcpkfkdpkru.supabase.co";
   var SUPABASE_KEY = "sb_publishable_XQWiir6tIrddFm3wrxyM4w_jRvmiJtn";
   var CREATE_LOGIN_FN_URL = SUPABASE_URL + "/functions/v1/create-player-login";
+  var SEND_UPDATE_EMAIL_FN_URL = SUPABASE_URL + "/functions/v1/send-update-email";
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   function showToast(msg){
@@ -1096,7 +1124,7 @@
 
   function loadState(){
     return Promise.all([
-      supabase.from("players").select("id,name,photo_url,user_id"),
+      supabase.from("players").select("id,name,photo_url,user_id,notify_email"),
       supabase.from("format_config").select("format_id,champion_bonus,subcampeon_bonus"),
       supabase.from("tournaments").select("id,format_id,date,name,champion_id,subcampeon_id,top4_extra_ids,example"),
       supabase.from("standings").select("tournament_id,player_id,deck,points"),
@@ -1126,7 +1154,7 @@
       });
       var configByFormat = {};
       configs.forEach(function(c){ configByFormat[c.format_id] = {championBonus:c.champion_bonus, subcampeonBonus:c.subcampeon_bonus}; });
-      var playersFull = players.map(function(p){ return {id:p.id, name:p.name, hasAccess: !!p.user_id, userId: p.user_id||null}; })
+      var playersFull = players.map(function(p){ return {id:p.id, name:p.name, hasAccess: !!p.user_id, userId: p.user_id||null, notifyEmail: p.notify_email||""}; })
         .sort(function(a,b){ return a.name.localeCompare(b.name); });
       var regsByEvent = {};
       registrations.forEach(function(r){
@@ -1619,6 +1647,55 @@
     return false;
   };
 
+  window.__submitNotifyEmail = function(playerId, ev){
+    ev.preventDefault();
+    var val = ev.target.elements.notify.value.trim();
+    runWrite(function(){
+      return supabase.from("players").update({ notify_email: val||null }).eq("id", playerId).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+    return false;
+  };
+
+  window.__openUpdateEmail = function(){ ui.updateEmail = { open:true, subject:"", message:"", sending:false, error:"", success:null, successTest:false }; render(); };
+  window.__closeUpdateEmail = function(){ ui.updateEmail.open = false; render(); };
+  window.__updateUpdateEmailDraft = function(field, val){ ui.updateEmail[field] = val; };
+  function doSendUpdateEmail(testOnly){
+    var u = ui.updateEmail;
+    u.sending = true; u.error = ""; u.success = null; render();
+    supabase.auth.getSession().then(function(sessionRes){
+      var token = sessionRes.data.session ? sessionRes.data.session.access_token : "";
+      return fetch(SEND_UPDATE_EMAIL_FN_URL, {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "Authorization":"Bearer "+token },
+        body: JSON.stringify({ subject: u.subject.trim(), message: u.message.trim(), testOnly: !!testOnly })
+      });
+    }).then(function(r){
+      return r.json().then(function(body){ return {ok:r.ok, body:body}; });
+    }).then(function(res){
+      u.sending = false;
+      if(!res.ok){ u.error = res.body.error || "No se pudo enviar."; render(); return; }
+      u.success = res.body.count;
+      u.successTest = !!res.body.test;
+      if(!testOnly){ u.subject = ""; u.message = ""; }
+      render();
+    }).catch(function(err){
+      u.sending = false; u.error = "Error: "+(err && err.message ? err.message : err); render();
+    });
+  }
+  window.__submitUpdateEmail = function(ev, testOnly){
+    ev.preventDefault();
+    var u = ui.updateEmail;
+    if(!u.subject.trim() || !u.message.trim()){ u.error = "Completá asunto y mensaje."; render(); return false; }
+    if(testOnly){
+      doSendUpdateEmail(true);
+    } else {
+      window.__askConfirm("¿Enviar este mail a todos los jugadores? No se puede deshacer.", function(){ doSendUpdateEmail(false); }, "Enviar a todos");
+    }
+    return false;
+  };
+
   window.__openUpcoming = function(){ ui.upcoming = { open:true, newDate:"", newName:"", newNotes:"", creating:false, error:"" }; render(); };
   window.__closeUpcoming = function(){ ui.upcoming.open = false; render(); };
   window.__updateUpcomingDraft = function(field, value){ ui.upcoming[field] = value; };
@@ -1776,6 +1853,9 @@
     else if(action==="open-gallery") window.__openGallery(el.getAttribute("data-tid"));
     else if(action==="close-gallery") window.__closeGallery();
     else if(action==="backdrop-gallery" && e.target===el) window.__closeGallery();
+    else if(action==="open-update-email") window.__openUpdateEmail();
+    else if(action==="close-update-email") window.__closeUpdateEmail();
+    else if(action==="backdrop-update-email" && e.target===el) window.__closeUpdateEmail();
     else if(action==="view-photo") window.__viewPhoto(parseInt(el.getAttribute("data-idx"),10));
     else if(action==="close-photo-view") window.__closePhotoView();
     else if(action==="delete-photo") window.__deletePhoto(el.getAttribute("data-id"), el.getAttribute("data-path"));
