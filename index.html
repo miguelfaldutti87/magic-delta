@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Delta</title>
+<link rel="icon" type="image/png" href="img/icono.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style id="app-style">
+  :root{
+    --bg:#f6efe0; --surface:#fffdf6; --surface-2:#f1e6c8; --surface-3:#e6d8ac;
+    --border:#cdb989; --text:#241d10; --text-dim:#6f5f3f;
+    --accent:#9c6f13; --accent-soft:#f0dfa8; --accent-ink:#3a2705;
+    --accent2:#5b3fb0; --accent2-soft:#eae4fa;
+    --good:#25794f; --bad:#b8393b; --warn:#a5700f;
+    --shadow:0 1px 2px rgba(40,28,4,.08),0 8px 20px rgba(40,28,4,.08);
+    --radius:10px; --radius-sm:6px;
+    --frame-inner:rgba(156,111,19,.55); --frame-outer:rgba(156,111,19,.22);
+    --sparkle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z' fill='%239c6f13'/%3E%3C/svg%3E");
+    --dragon-bg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%239c6f13' stroke-width='1.2'%3E%3Ccircle cx='400' cy='400' r='260'/%3E%3Ccircle cx='400' cy='400' r='230'/%3E%3Cg%3E%3Cpath d='M400 140 L410 168 L400 158 L390 168 Z'/%3E%3Cpath d='M660 400 L632 410 L642 400 L632 390 Z'/%3E%3Cpath d='M400 660 L390 632 L400 642 L410 632 Z'/%3E%3Cpath d='M140 400 L168 390 L158 400 L168 410 Z'/%3E%3C/g%3E%3Cpath d='M250 520 C220 460 240 380 300 350 C260 330 250 280 290 250 C260 230 270 190 310 190 C330 160 380 155 400 185 C440 160 490 175 495 215 C540 220 555 265 530 300 C560 330 550 380 510 395 C525 440 495 480 450 475 C440 510 395 525 365 500 C340 520 280 540 250 520 Z'/%3E%3Cpath d='M420 190 L445 165 L440 195 Z'/%3E%3Cpath d='M460 205 L490 190 L478 218 Z'/%3E%3Ccircle cx='305' cy='215' r='4' fill='%239c6f13'/%3E%3C/g%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#121118; --surface:#1a1822; --surface-2:#201f2b; --surface-3:#2a2836;
+      --border:#3d3628; --text:#ece6d6; --text-dim:#a89a78;
+      --accent:#e9c349; --accent-soft:#3c3018; --accent-ink:#2a1d00;
+      --accent2:#a48ded; --accent2-soft:#2a2440;
+      --good:#57c98d; --bad:#e2696b; --warn:#e0ab52;
+      --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 26px rgba(139,92,246,.12);
+      --frame-inner:rgba(233,195,73,.45); --frame-outer:rgba(233,195,73,.18);
+      --sparkle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z' fill='%23e9c349'/%3E%3C/svg%3E");
+      --dragon-bg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%23e9c349' stroke-width='1.2'%3E%3Ccircle cx='400' cy='400' r='260'/%3E%3Ccircle cx='400' cy='400' r='230'/%3E%3Cg%3E%3Cpath d='M400 140 L410 168 L400 158 L390 168 Z'/%3E%3Cpath d='M660 400 L632 410 L642 400 L632 390 Z'/%3E%3Cpath d='M400 660 L390 632 L400 642 L410 632 Z'/%3E%3Cpath d='M140 400 L168 390 L158 400 L168 410 Z'/%3E%3C/g%3E%3Cpath d='M250 520 C220 460 240 380 300 350 C260 330 250 280 290 250 C260 230 270 190 310 190 C330 160 380 155 400 185 C440 160 490 175 495 215 C540 220 555 265 530 300 C560 330 550 380 510 395 C525 440 495 480 450 475 C440 510 395 525 365 500 C340 520 280 540 250 520 Z'/%3E%3Cpath d='M420 190 L445 165 L440 195 Z'/%3E%3Cpath d='M460 205 L490 190 L478 218 Z'/%3E%3Ccircle cx='305' cy='215' r='4' fill='%23e9c349'/%3E%3C/g%3E%3C/svg%3E");
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#121118; --surface:#1a1822; --surface-2:#201f2b; --surface-3:#2a2836;
+    --border:#3d3628; --text:#ece6d6; --text-dim:#a89a78;
+    --accent:#e9c349; --accent-soft:#3c3018; --accent-ink:#2a1d00;
+    --accent2:#a48ded; --accent2-soft:#2a2440;
+    --good:#57c98d; --bad:#e2696b; --warn:#e0ab52;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 26px rgba(139,92,246,.12);
+    --frame-inner:rgba(233,195,73,.45); --frame-outer:rgba(233,195,73,.18);
+    --sparkle:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z' fill='%23e9c349'/%3E%3C/svg%3E");
+    --dragon-bg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%23e9c349' stroke-width='1.2'%3E%3Ccircle cx='400' cy='400' r='260'/%3E%3Ccircle cx='400' cy='400' r='230'/%3E%3Cg%3E%3Cpath d='M400 140 L410 168 L400 158 L390 168 Z'/%3E%3Cpath d='M660 400 L632 410 L642 400 L632 390 Z'/%3E%3Cpath d='M400 660 L390 632 L400 642 L410 632 Z'/%3E%3Cpath d='M140 400 L168 390 L158 400 L168 410 Z'/%3E%3C/g%3E%3Cpath d='M250 520 C220 460 240 380 300 350 C260 330 250 280 290 250 C260 230 270 190 310 190 C330 160 380 155 400 185 C440 160 490 175 495 215 C540 220 555 265 530 300 C560 330 550 380 510 395 C525 440 495 480 450 475 C440 510 395 525 365 500 C340 520 280 540 250 520 Z'/%3E%3Cpath d='M420 190 L445 165 L440 195 Z'/%3E%3Cpath d='M460 205 L490 190 L478 218 Z'/%3E%3Ccircle cx='305' cy='215' r='4' fill='%23e9c349'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;line-height:1.45;position:relative;}
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;background:center/min(900px,95vw) no-repeat var(--dragon-bg);}
+  body::after{content:"";position:fixed;inset:-30px;z-index:0;pointer-events:none;opacity:.24;filter:blur(4px);background:center/cover no-repeat url("img/fondo.avif");}
+  h1,h2,h3,.display{font-family:"Cinzel",Georgia,serif;text-wrap:balance;letter-spacing:.01em;}
+  .mono, .num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  a{color:inherit;}
+  button, input, select{font-family:inherit;font-size:inherit;color:inherit;}
+  #app{max-width:1080px;margin:0 auto;padding:0 20px 64px;position:relative;z-index:1;}
+
+  .hero-banner{height:150px;margin:0 -20px 0;background:center 35%/cover no-repeat url("img/banner.jpg");position:relative;}
+  .hero-banner::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg, rgba(10,8,14,0) 45%, var(--bg) 96%);}
+  @media (max-width:640px){ .hero-banner{height:100px;} }
+
+  .topbar{position:sticky;top:0;z-index:20;background:var(--bg);padding:20px 20px 0;margin:0 -20px 28px;border-bottom:1px solid var(--border);}
+  .topbar-inner{max-width:1080px;margin:0 auto;}
+  .brand-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:34px;height:34px;flex:none;border-radius:50%;object-fit:cover;border:1.5px solid var(--accent);display:block;}
+  .brand h1{font-size:22px;font-weight:600;margin:0;letter-spacing:.2px;}
+  .brand-sub{font-size:12.5px;color:var(--text-dim);margin-top:1px;}
+  .topbar-actions{display:flex;align-items:center;gap:10px;}
+  .readonly-badge{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);padding:4px 9px;border-radius:100px;}
+
+  .mana-strip{display:flex;gap:7px;margin:10px 0 2px;}
+  .mana-pip{width:22px;height:22px;border-radius:50%;display:block;overflow:hidden;border:1px solid var(--border);flex:none;}
+  .mana-pip img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  .format-tabs{display:flex;gap:8px;margin:18px 0 16px;}
+  .format-tab{padding:6px 18px;border-radius:100px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);text-decoration:none;border:1px solid var(--border);background:var(--surface-2);}
+  .format-tab:hover{color:var(--text);border-color:var(--text-dim);}
+  .format-tab.active{color:var(--accent-ink);background:var(--accent);border-color:var(--accent);}
+
+  .tabs{display:flex;gap:4px;margin-top:16px;}
+  .tab{padding:9px 14px;border-radius:8px 8px 0 0;font-size:14px;font-weight:500;color:var(--text-dim);text-decoration:none;border-bottom:2px solid transparent;}
+  .tab.active{color:var(--text);border-bottom-color:var(--accent);}
+  .tab:hover{color:var(--text);}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);padding:8px 14px;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer;}
+  .btn:hover{border-color:var(--text-dim);}
+  .btn:focus-visible{outline:2px solid var(--accent2);outline-offset:1px;}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .btn-primary:hover{filter:brightness(1.05);}
+  .btn-ghost{border-color:transparent;background:transparent;padding:6px 8px;}
+  .btn-danger{color:var(--bad);}
+  .btn-sm{padding:5px 9px;font-size:12.5px;border-radius:6px;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:28px;}
+  .stat-tile,.card,.tourn-card,.champ-hero{position:relative;outline:1px solid var(--frame-inner);outline-offset:3px;}
+  .stat-tile::before,.card::before,.tourn-card::before,.champ-hero::before{content:"";position:absolute;top:-7px;left:-7px;width:14px;height:14px;background:center/contain no-repeat var(--sparkle);pointer-events:none;}
+  .stat-tile::after,.card::after,.tourn-card::after,.champ-hero::after{content:"";position:absolute;bottom:-7px;right:-7px;width:14px;height:14px;background:center/contain no-repeat var(--sparkle);pointer-events:none;}
+  .stat-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+  .stat-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;}
+  .stat-value{font-family:"Cinzel",serif;font-size:22px;font-weight:600;}
+  .stat-sub{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+
+  section h2{font-size:18px;font-weight:600;margin:0 0 14px;}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .select-filter{-webkit-appearance:none;-moz-appearance:none;appearance:none;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 8 L10 13 L15 8' fill='none' stroke='%239096a8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:8px 30px 8px 10px;font-size:13.5px;}
+  .select-filter:focus{outline:2px solid var(--accent2);outline-offset:0;border-color:transparent;}
+  .select-filter option{background:var(--surface);color:var(--text);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{padding:11px 14px;text-align:left;white-space:nowrap;}
+  thead th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);border-bottom:1px solid var(--border);font-weight:600;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:var(--surface-2);}
+  td.wrap, th.wrap{white-space:normal;}
+  tr.rank-1 td{background:var(--accent-soft);}
+  tr.rank-1 td:first-child{border-radius:var(--radius-sm) 0 0 var(--radius-sm);}
+
+  .pos-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:100px;background:var(--surface-3);font-size:12.5px;font-weight:600;font-family:"IBM Plex Mono",monospace;}
+  .pos-1{background:var(--accent);color:var(--accent-ink);}
+  .pos-2,.pos-3,.pos-4{background:var(--accent2-soft);color:var(--accent2);}
+  .crown{color:var(--accent);}
+
+  .pill{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:3px 9px;border-radius:100px;background:var(--surface-3);color:var(--text-dim);}
+
+  .tourn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+  .tourn-card{position:relative;padding:16px 18px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--text);}
+  .tourn-card:hover{border-color:var(--text-dim);}
+  .tourn-date{font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
+  .tourn-name{font-family:"Cinzel",serif;font-size:18px;font-weight:600;}
+  .tourn-champ{font-size:13px;display:flex;align-items:center;gap:6px;}
+  .tourn-top4{font-size:12.5px;color:var(--text-dim);}
+  .tourn-admin{position:absolute;top:12px;right:12px;display:flex;gap:4px;}
+  .example-flag{font-size:11px;color:var(--warn);}
+
+  .champ-hero{display:flex;align-items:center;gap:24px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 26px;margin-bottom:22px;}
+  .champ-photo{width:168px;height:168px;border-radius:50%;object-fit:cover;object-position:top;flex:none;border:3px solid var(--accent);}
+  .champ-avatar{width:168px;height:168px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Cinzel",serif;font-size:50px;font-weight:600;border:3px solid var(--accent);}
+  .champ-hero-info{flex:1;min-width:0;}
+  .champ-hero-label{position:relative;display:inline-block;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600;padding:0 34px;}
+  .champ-hero-label::before,.champ-hero-label::after{content:"";position:absolute;top:50%;width:26px;height:14px;margin-top:-7px;opacity:.6;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 22'%3E%3Cg fill='none' stroke='%239c6f13' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 20 C10 18 14 10 12 2'/%3E%3Cellipse cx='11.5' cy='5' rx='2.6' ry='1.6' transform='rotate(-35 11.5 5)' fill='%239c6f13' stroke='none'/%3E%3Cellipse cx='9' cy='9.5' rx='2.6' ry='1.6' transform='rotate(-15 9 9.5)' fill='%239c6f13' stroke='none'/%3E%3Cellipse cx='6.5' cy='14' rx='2.6' ry='1.6' transform='rotate(10 6.5 14)' fill='%239c6f13' stroke='none'/%3E%3C/g%3E%3C/svg%3E");}
+  :root[data-theme="dark"] .champ-hero-label::before,:root[data-theme="dark"] .champ-hero-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 22'%3E%3Cg fill='none' stroke='%23e9c349' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 20 C10 18 14 10 12 2'/%3E%3Cellipse cx='11.5' cy='5' rx='2.6' ry='1.6' transform='rotate(-35 11.5 5)' fill='%23e9c349' stroke='none'/%3E%3Cellipse cx='9' cy='9.5' rx='2.6' ry='1.6' transform='rotate(-15 9 9.5)' fill='%23e9c349' stroke='none'/%3E%3Cellipse cx='6.5' cy='14' rx='2.6' ry='1.6' transform='rotate(10 6.5 14)' fill='%23e9c349' stroke='none'/%3E%3C/g%3E%3C/svg%3E");}
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) .champ-hero-label::before,:root:not([data-theme="light"]) .champ-hero-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 22'%3E%3Cg fill='none' stroke='%23e9c349' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M2 20 C10 18 14 10 12 2'/%3E%3Cellipse cx='11.5' cy='5' rx='2.6' ry='1.6' transform='rotate(-35 11.5 5)' fill='%23e9c349' stroke='none'/%3E%3Cellipse cx='9' cy='9.5' rx='2.6' ry='1.6' transform='rotate(-15 9 9.5)' fill='%23e9c349' stroke='none'/%3E%3Cellipse cx='6.5' cy='14' rx='2.6' ry='1.6' transform='rotate(10 6.5 14)' fill='%23e9c349' stroke='none'/%3E%3C/g%3E%3C/svg%3E");}
+  }
+  .champ-hero-label::before{left:0;}
+  .champ-hero-label::after{right:0;transform:scaleX(-1);}
+  .champ-hero-name{font-family:"Cinzel",serif;font-size:42px;font-weight:700;line-height:1.15;text-wrap:balance;}
+  .champ-hero-deck{font-size:15px;color:var(--text-dim);margin-top:4px;}
+
+  .back-link{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--text-dim);text-decoration:none;margin-bottom:16px;}
+  .back-link:hover{color:var(--text);}
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+  .detail-title h2{margin:0 0 4px;font-size:24px;}
+  .detail-meta{display:flex;gap:8px;align-items:center;color:var(--text-dim);font-size:13.5px;}
+
+  .bar-rows{display:flex;flex-direction:column;gap:10px;}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 52px;gap:12px;align-items:center;font-size:13.5px;}
+  .bar-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .bar-track{height:10px;background:var(--surface-3);border-radius:100px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--accent2);border-radius:100px;}
+  .bar-pct{text-align:right;color:var(--text-dim);}
+
+  .empty-state{padding:40px 20px;text-align:center;color:var(--text-dim);font-size:14px;}
+  .example-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--accent-soft);border:1px solid var(--accent);color:var(--accent-ink);padding:10px 16px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:20px;flex-wrap:wrap;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(10,10,14,.5);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:100;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:640px;padding:24px;}
+  .modal h3{margin:0 0 18px;font-size:19px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:12px;color:var(--text-dim);font-weight:500;}
+  .field input, .field select{border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:7px;padding:8px 10px;font-size:13.5px;}
+  .field input:focus, .field select:focus{outline:2px solid var(--accent2);outline-offset:0;border-color:transparent;}
+
+  .rows-head, .row-item{display:grid;grid-template-columns:28px 1.3fr 1.3fr 1fr 32px;gap:8px;align-items:center;}
+  .rows-head{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);padding:0 2px;margin-bottom:6px;}
+  .row-item{margin-bottom:8px;}
+  .row-item input{width:100%;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:6px;padding:7px 9px;font-size:13px;}
+  .row-item input:focus{outline:2px solid var(--accent2);outline-offset:0;border-color:transparent;}
+  .row-pos{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--text-dim);text-align:center;}
+  .row-del{background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:15px;border-radius:6px;padding:4px;}
+  .row-del:hover{color:var(--bad);background:var(--surface-2);}
+
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+  .field-error{font-size:12.5px;color:var(--bad);margin:-6px 0 12px;}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:8px;font-size:13.5px;box-shadow:var(--shadow);z-index:200;}
+
+  .settings-hint{font-size:12.5px;color:var(--text-dim);margin:-8px 0 16px;}
+  footer.credit{margin-top:48px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim);text-align:center;}
+
+  .decklist-layout{display:flex;gap:24px;align-items:flex-start;}
+  .decklist-columns{display:flex;gap:28px;flex:1;min-width:0;}
+  .decklist-col{flex:1;min-width:0;}
+  .decklist-main{flex:1;min-width:0;}
+  .decklist-side{width:260px;flex:none;position:sticky;top:90px;}
+  .decklist-preview-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;text-align:center;}
+  .decklist-preview-box img{width:100%;border-radius:8px;display:block;}
+  .decklist-preview-placeholder{aspect-ratio:5/7;border:1px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12.5px;padding:12px;text-align:center;}
+  .decklist-preview-name{margin-top:10px;font-size:13px;color:var(--text-dim);}
+  .decklist-commander{margin-bottom:20px;}
+  .decklist-group{margin-bottom:18px;}
+  .decklist-group h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin:0 0 6px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  .decklist-row{display:flex;gap:8px;padding:4px 2px;font-size:14px;cursor:default;border-radius:6px;}
+  .decklist-row:hover{background:var(--surface-2);}
+  .decklist-row .num{font-family:"IBM Plex Mono",monospace;color:var(--text-dim);width:22px;flex:none;text-align:right;}
+  .decklist-count{font-size:12px;color:var(--text-dim);font-weight:400;}
+  .decklist-missing{color:var(--warn);font-size:12.5px;margin-top:10px;}
+
+  @media (max-width:640px){
+    .form-grid{grid-template-columns:1fr;}
+    .rows-head, .row-item{grid-template-columns:18px 1.4fr 1.2fr 58px 26px;gap:5px;}
+    .row-item input{padding:7px 6px;font-size:12.5px;}
+    .bar-row{grid-template-columns:100px 1fr 46px;}
+    .champ-hero{flex-wrap:wrap;}
+    .champ-photo, .champ-avatar{width:110px;height:110px;font-size:34px;}
+    .champ-hero-name{font-size:28px;}
+    .decklist-layout{flex-direction:column;}
+    .decklist-side{width:100%;position:static;max-width:220px;margin:0 auto;}
+    .decklist-columns{flex-direction:column;gap:0;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="app-script">
+(function(){
+  "use strict";
+
+  var STATE = null;
+  var writable = false;
+  var currentUser = null;
+
+  var FORMAT_TABS = [
+    {slug:"pauper", label:"Pauper"},
+    {slug:"commander", label:"Commander"},
+    {slug:"draft", label:"Draft"}
+  ];
+  var currentFormat = FORMAT_TABS[0].slug;
+  function formatTab(slug){
+    for(var i=0;i<FORMAT_TABS.length;i++){ if(FORMAT_TABS[i].slug===slug) return FORMAT_TABS[i]; }
+    return FORMAT_TABS[0];
+  }
+  function fmtPath(p){ return "#"+currentFormat+(p?("/"+p):""); }
+  function tournamentsForFormat(state, slug){
+    return (state.tournaments||[]).filter(function(t){ return t.format===slug; });
+  }
+  function eventsForFormat(state, slug){
+    return (state.events||[]).filter(function(e){ return e.format===slug; });
+  }
+
+  var ui = {
+    booting:true, bootError:"",
+    modalOpen:false, modalMode:"create", editingId:null,
+    draft:{ date:"", name:"", format:"pauper", rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"" },
+    settingsOpen:false, championBonusDraft:"", subcampeonBonusDraft:"", settingsError:"",
+    formError:"", mazosFilter:"", toast:null, saving:false,
+    photo:{ open:false, player:"", value:"" },
+    confirm:{ open:false, message:"", confirmLabel:"Eliminar", action:null },
+    login:{ open:false, email:"", password:"", sending:false, error:"" },
+    accounts:{ open:false, myPassword:"", myPasswordSaving:false, myPasswordMsg:"", forms:{}, lastCreated:null },
+    upcoming:{ open:false, newDate:"", newName:"", newNotes:"", creating:false, error:"" },
+    decklistEdit:null,
+    gallery:{ open:false, tid:null, photos:[], loading:false, error:"", uploading:false, viewIndex:null }
+  };
+
+  function escapeHtml(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function fmtDate(iso){
+    if(!iso) return "";
+    var d = new Date(iso+"T00:00:00");
+    if(isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("es-AR",{day:"numeric",month:"short",year:"numeric"});
+  }
+  function uid(){ return "t"+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+  function initials(name){
+    var parts = (name||"").trim().split(/\s+/).filter(Boolean);
+    if(!parts.length) return "?";
+    if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+  }
+  function avatarColor(name){
+    var str = (name||"").trim().toLowerCase();
+    var hash = 0;
+    for(var i=0;i<str.length;i++){ hash = (hash*31 + str.charCodeAt(i)) & 0xffffffff; }
+    var hue = Math.abs(hash) % 360;
+    return "hsl("+hue+", 46%, 40%)";
+  }
+  function photoFor(state, name){
+    var key = (name||"").trim();
+    if(!key || !state.playerPhotos) return "";
+    return (state.playerPhotos[key]||"").trim();
+  }
+
+  function top4Members(t){
+    return [t.champion, t.subcampeon].concat(t.top4Extra||[]).filter(Boolean).map(function(s){return s.trim();});
+  }
+
+  function tieRanks(sortedByPoints){
+    var rank = 0, prevPoints = null;
+    return sortedByPoints.map(function(row,i){
+      if(prevPoints===null || row.points!==prevPoints){ rank = i+1; prevPoints = row.points; }
+      return rank;
+    });
+  }
+
+  function generalTable(state){
+    var map = new Map();
+    var championBonus = (state.config && typeof state.config.championBonus==="number") ? state.config.championBonus : 6;
+    var subcampeonBonus = (state.config && typeof state.config.subcampeonBonus==="number") ? state.config.subcampeonBonus : 3;
+    state.tournaments.forEach(function(t){
+      var champ = (t.champion||"").trim();
+      var sub = (t.subcampeon||"").trim();
+      var top4Set = new Set(top4Members(t));
+      t.standings.forEach(function(s){
+        var key = (s.player||"").trim();
+        if(!key) return;
+        if(!map.has(key)) map.set(key,{player:key,points:0,played:0,championships:0,top4:0});
+        var rec = map.get(key);
+        var pts = Number(s.points)||0;
+        if(champ && key===champ) pts += championBonus;
+        if(sub && key===sub) pts += subcampeonBonus;
+        rec.points += pts; rec.played += 1;
+        if(champ && key===champ) rec.championships += 1;
+        if(top4Set.has(key)) rec.top4 += 1;
+      });
+    });
+    return Array.from(map.values()).sort(function(a,b){
+      return b.points-a.points || b.championships-a.championships || b.top4-a.top4 || a.player.localeCompare(b.player);
+    });
+  }
+
+  function deckStats(state, tid){
+    var list = tid ? state.tournaments.filter(function(t){return t.id===tid;}) : state.tournaments;
+    var map = new Map(); var total = 0;
+    list.forEach(function(t){
+      t.standings.forEach(function(s){
+        var key = (s.deck||"").trim();
+        if(!key) return;
+        total++;
+        if(!map.has(key)) map.set(key,{deck:key,count:0,players:new Set()});
+        var rec = map.get(key);
+        rec.count++; rec.players.add((s.player||"").trim());
+      });
+    });
+    var rows = Array.from(map.values()).map(function(r){
+      return { deck:r.deck, count:r.count, pct: total? (r.count/total*100):0, players:Array.from(r.players) };
+    }).sort(function(a,b){ return b.count-a.count || a.deck.localeCompare(b.deck); });
+    return { total: total, rows: rows };
+  }
+
+  function allDecks(state){
+    var set = new Set();
+    state.tournaments.forEach(function(t){ t.standings.forEach(function(s){ if(s.deck) set.add(s.deck.trim()); }); });
+    return Array.from(set).sort(function(a,b){return a.localeCompare(b);});
+  }
+  function parseRoute(){
+    var h = location.hash.replace(/^#/,"");
+    var parts = h.split("/");
+    var fmt, rest;
+    if(parts.length && formatTab(parts[0]).slug===parts[0]){
+      fmt = parts[0];
+      rest = parts.slice(1).join("/");
+    } else {
+      fmt = FORMAT_TABS[0].slug;
+      rest = h;
+    }
+    var route;
+    if(rest.indexOf("decklist/")===0){
+      var dparts = rest.slice(9).split("/");
+      route = { view:"decklist", tid: decodeURIComponent(dparts[0]||""), name: decodeURIComponent(dparts[1]||"") };
+    }
+    else if(rest.indexOf("torneo/")===0) route = { view:"torneo", id: decodeURIComponent(rest.slice(7)) };
+    else if(rest.indexOf("jugador/")===0) route = { view:"jugador", name: decodeURIComponent(rest.slice(8)) };
+    else if(rest==="torneos") route = { view:"torneos" };
+    else if(rest==="mazos") route = { view:"mazos" };
+    else route = { view:"general" };
+    if(fmt==="draft" && route.view==="mazos") route = { view:"general" };
+    route.format = fmt;
+    return route;
+  }
+
+  function brandMark(){
+    return '<img class="brand-mark" src="img/icono.png" alt="Magic Delta">';
+  }
+
+  function manaPipsStrip(){
+    var pips = [
+      {file:"llanura.png", alt:"Blanco"},
+      {file:"isla.png", alt:"Azul"},
+      {file:"pantano.png", alt:"Negro"},
+      {file:"montaña.png", alt:"Rojo"},
+      {file:"bosque.png", alt:"Verde"}
+    ];
+    return '<div class="mana-strip" aria-hidden="true">'+pips.map(function(p){
+      return '<span class="mana-pip"><img src="img/'+encodeURIComponent(p.file)+'" alt="'+p.alt+'" loading="lazy"></span>';
+    }).join("")+'</div>';
+  }
+
+  function torneosLabel(){
+    if(currentFormat==="commander") return "Fechas";
+    if(currentFormat==="draft") return "Drafts";
+    return "Torneos";
+  }
+
+  function renderTopbar(route){
+    var formatTabsHtml = FORMAT_TABS.map(function(f){
+      return '<a class="format-tab'+(f.slug===route.format?' active':'')+'" href="#'+f.slug+'">'+f.label+'</a>';
+    }).join("");
+    var tabs = [
+      {v:"general", href:fmtPath("general"), label:"Tabla General"},
+      {v:"torneos", href:fmtPath("torneos"), label:torneosLabel()}
+    ];
+    if(currentFormat!=="draft") tabs.push({v:"mazos", href:fmtPath("mazos"), label:"Mazos"});
+    var activeView = route.view==="torneo" ? "torneos" : (route.view==="jugador" ? "general" : route.view);
+    var tabsHtml = tabs.map(function(t){
+      return '<a class="tab'+(t.v===activeView?' active':'')+'" href="'+t.href+'">'+t.label+'</a>';
+    }).join("");
+    var actions = "";
+    if(writable){
+      actions += '<button class="btn btn-primary" data-action="open-create">+ Nueva fecha</button>';
+      actions += '<button class="btn btn-ghost" data-action="open-settings" title="Configurar puntos">⚙︎</button>';
+    }
+    if(currentUser){
+      var meName = currentPlayerName();
+      if(meName) actions += '<a class="btn btn-ghost btn-sm" href="'+fmtPath("jugador/"+encodeURIComponent(meName))+'">'+escapeHtml(meName)+'</a>';
+      actions += '<button class="btn btn-ghost btn-sm" data-action="open-upcoming">Próximas Fechas</button>';
+      actions += '<button class="btn btn-ghost btn-sm" data-action="open-accounts" title="Cambiar tu contraseña">'+(writable?"Accesos":"Mi cuenta")+'</button>';
+      actions += '<button class="btn btn-ghost btn-sm" data-action="logout">Cerrar sesión</button>';
+    } else {
+      actions += '<button class="btn btn-ghost btn-sm" data-action="open-login">Iniciar sesión</button>';
+    }
+    return '<div class="hero-banner" aria-hidden="true"></div>'+
+      '<div class="topbar"><div class="topbar-inner">'+
+      '<div class="brand-row"><div class="brand">'+brandMark()+
+        '<div><h1>Magic Delta</h1><div class="brand-sub">Ligas de Magic Zarate/Campana</div></div>'+
+      '</div><div class="topbar-actions">'+actions+'</div></div>'+
+      manaPipsStrip()+
+      '<div class="format-tabs">'+formatTabsHtml+'</div>'+
+      '<div class="tabs">'+tabsHtml+'</div>'+
+      '</div></div>';
+  }
+
+  function renderDraftSummary(state){
+    var sorted = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+    var winCounts = {};
+    state.tournaments.forEach(function(t){
+      var champ = (t.champion||"").trim();
+      if(champ) winCounts[champ] = (winCounts[champ]||0)+1;
+    });
+    var topWinner = null;
+    Object.keys(winCounts).forEach(function(name){
+      if(!topWinner || winCounts[name]>topWinner.count) topWinner = {name:name, count:winCounts[name]};
+    });
+
+    var stats = '<div class="stat-grid">'+
+      '<div class="stat-tile"><div class="stat-label">Más ganador</div><div class="stat-value">'+(topWinner?escapeHtml(topWinner.name):"—")+'</div><div class="stat-sub">'+(topWinner?topWinner.count+" victoria"+(topWinner.count===1?"":"s"):"Sin drafts cargados")+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-label">Draft Jugados</div><div class="stat-value">'+state.tournaments.length+'</div><div class="stat-sub">'+(sorted.length?"Última: "+fmtDate(sorted[0].date):"—")+'</div></div>'+
+      '</div>';
+
+    var rows = sorted.map(function(t){
+      return '<tr>'+
+        '<td><a href="'+fmtPath("torneo/"+encodeURIComponent(t.id))+'">'+escapeHtml(t.name||"Draft")+'</a></td>'+
+        '<td>'+fmtDate(t.date)+'</td>'+
+        '<td>'+(t.champion? '<span class="crown">♛</span> '+escapeHtml(t.champion) : "—")+'</td>'+
+        '</tr>';
+    }).join("");
+
+    var tableHtml = sorted.length ? (
+      '<div class="table-wrap"><table><thead><tr><th>Draft</th><th>Fecha</th><th>Ganador</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    ) : '<div class="card empty-state">Todavía no hay drafts cargados. Usá "+ Nueva fecha" para empezar.</div>';
+
+    return stats + '<section><div class="section-head"><h2>Resumen de resultados</h2></div>'+tableHtml+'</section>';
+  }
+
+  function renderGeneral(state){
+    if(currentFormat==="draft") return renderDraftSummary(state);
+    var table = generalTable(state);
+    var leader = table[0];
+    var sorted = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+    var latest = sorted[0];
+    var decks = deckStats(state, null);
+    var topDeck = decks.rows[0];
+
+    var stats = '<div class="stat-grid">'+
+      '<div class="stat-tile"><div class="stat-label">Líder actual</div><div class="stat-value">'+(leader?escapeHtml(leader.player):"—")+'</div><div class="stat-sub">'+(leader?leader.points+" pts":"Sin fechas cargadas")+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-label">Fechas jugadas</div><div class="stat-value">'+state.tournaments.length+'</div><div class="stat-sub">'+(latest?"Última: "+fmtDate(latest.date):"—")+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-label">Mazo más jugado</div><div class="stat-value">'+(topDeck?escapeHtml(topDeck.deck):"—")+'</div><div class="stat-sub">'+(topDeck?topDeck.pct.toFixed(0)+"% de representación":"—")+'</div></div>'+
+      '</div>';
+
+    var rows = table.map(function(r,i){
+      var pos = i+1;
+      return '<tr class="'+(pos===1?"rank-1":"")+'">'+
+        '<td><span class="pos-badge '+(pos===1?"pos-1":(pos<=4?"pos-2":""))+'">'+pos+'</span></td>'+
+        '<td><a href="'+fmtPath("jugador/"+encodeURIComponent(r.player))+'">'+escapeHtml(r.player)+'</a></td>'+
+        '<td class="num">'+r.points+'</td>'+
+        '<td class="num">'+r.played+'</td>'+
+        '<td class="num">'+(r.championships? '<span class="crown">♛</span> '+r.championships : "0")+'</td>'+
+        '<td class="num">'+r.top4+'</td>'+
+        '</tr>';
+    }).join("");
+
+    var tableHtml = table.length ? (
+      '<div class="table-wrap"><table><thead><tr>'+
+      '<th>#</th><th>Jugador</th><th>Puntos</th><th>Fechas</th><th>Campeonatos</th><th>Top 4</th>'+
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>'
+    ) : '<div class="card empty-state">Todavía no hay fechas cargadas. Usá "+ Nueva fecha" para empezar.</div>';
+
+    return stats + '<section><div class="section-head"><h2>Tabla general</h2></div>'+tableHtml+'</section>';
+  }
+
+  function tournamentCard(state, t){
+    var champEntry = t.champion ? t.standings.find(function(s){return (s.player||"").trim()===t.champion.trim();}) : null;
+    var top4 = top4Members(t);
+    var adminBtns = writable ? (
+      '<div class="tourn-admin">'+
+      '<button class="btn btn-ghost btn-sm" data-action="edit-tournament" data-id="'+escapeHtml(t.id)+'" title="Editar">✎</button>'+
+      '<button class="btn btn-ghost btn-sm btn-danger" data-action="delete-tournament" data-id="'+escapeHtml(t.id)+'" title="Eliminar">✕</button>'+
+      '</div>'
+    ) : "";
+    return '<a class="card tourn-card" href="'+fmtPath("torneo/"+encodeURIComponent(t.id))+'">'+adminBtns+
+      '<div class="tourn-date">'+fmtDate(t.date)+(t.example?' <span class="example-flag">· ejemplo</span>':'')+'</div>'+
+      '<div class="tourn-name">'+escapeHtml(t.name||"Fecha")+'</div>'+
+      (t.champion? '<div class="tourn-champ"><span class="crown">♛</span> '+escapeHtml(t.champion)+(champEntry&&champEntry.deck? ' — '+escapeHtml(champEntry.deck):'')+'</div>':'')+
+      (top4.length? '<div class="tourn-top4">Top 4: '+top4.map(escapeHtml).join(", ")+'</div>':'')+
+      '</a>';
+  }
+
+  function renderTorneos(state){
+    var sorted = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+    var exampleOnly = state.tournaments.length>0 && state.tournaments.every(function(t){return t.example;});
+    var banner = "";
+    if(exampleOnly && writable){
+      banner = '<div class="example-banner"><span>Estas fechas son de ejemplo para mostrar cómo se ve la liga.</span>'+
+        '<button class="btn btn-sm" data-action="clear-examples">Quitar datos de ejemplo</button></div>';
+    }
+    var grid = sorted.length ? '<div class="tourn-grid">'+sorted.map(function(t){return tournamentCard(state,t);}).join("")+'</div>'
+      : '<div class="card empty-state">Todavía no hay fechas cargadas.</div>';
+    return banner+'<section><div class="section-head"><h2>'+torneosLabel()+'</h2></div>'+grid+'</section>';
+  }
+
+  function renderTorneoDetail(state, id){
+    var t = state.tournaments.find(function(x){return x.id===id;});
+    if(!t){
+      return '<a class="back-link" href="'+fmtPath("torneos")+'">← Volver a '+torneosLabel().toLowerCase()+'</a><div class="card empty-state">No encontramos esa fecha.</div>';
+    }
+    var sortedStandings = t.standings.slice().sort(function(a,b){ return (Number(b.points)||0)-(Number(a.points)||0); });
+    var ranks = tieRanks(sortedStandings.map(function(s){return {points:Number(s.points)||0};}));
+    var champ = (t.champion||"").trim(), sub = (t.subcampeon||"").trim();
+    var extra = (t.top4Extra||[]).map(function(x){return x.trim();});
+    var showDecklists = t.format!=="draft";
+    var rows = sortedStandings.map(function(s,i){
+      var pos = ranks[i];
+      var key = (s.player||"").trim();
+      var badge = "";
+      if(champ && key===champ) badge = ' <span class="crown" title="Campeón del día">♛</span> <span class="pill" style="margin-left:2px">Campeón</span>';
+      else if(sub && key===sub) badge = ' <span class="pill" style="margin-left:6px">Subcampeón</span>';
+      else if(extra.indexOf(key)>-1) badge = ' <span class="pill" style="margin-left:6px">Top 4</span>';
+      return '<tr class="'+((champ&&key===champ)?"rank-1":"")+'">'+
+        '<td><span class="pos-badge '+((champ&&key===champ)?"pos-1":(pos<=4?"pos-2":""))+'">'+pos+'</span></td>'+
+        '<td><a href="'+fmtPath("jugador/"+encodeURIComponent(key))+'">'+escapeHtml(s.player)+'</a>'+badge+'</td>'+
+        '<td>'+escapeHtml(s.deck||"—")+'</td>'+
+        '<td class="num">'+(Number(s.points)||0)+'</td>'+
+        (showDecklists&&key? '<td><a href="'+fmtPath("decklist/"+encodeURIComponent(t.id)+"/"+encodeURIComponent(key))+'">Decklist</a></td>' : (showDecklists?'<td></td>':''))+
+        '</tr>';
+    }).join("");
+    var dstats = deckStats(state, t.id);
+    var bars = dstats.rows.map(function(r){
+      return '<div class="bar-row"><div class="bar-name" title="'+escapeHtml(r.deck)+'">'+escapeHtml(r.deck)+'</div>'+
+        '<div class="bar-track"><div class="bar-fill" style="width:'+r.pct.toFixed(1)+'%"></div></div>'+
+        '<div class="bar-pct num">'+r.pct.toFixed(0)+'%</div></div>';
+    }).join("");
+
+    var champEntry = champ ? sortedStandings.find(function(s){return (s.player||"").trim()===champ;}) : null;
+    var champPhoto = photoFor(state, champ);
+    var heroHtml = champ ? (
+      '<div class="champ-hero">'+
+        (champPhoto?
+          '<img class="champ-photo" src="'+escapeHtml(champPhoto)+'" alt="Foto de '+escapeHtml(champ)+'">' :
+          '<div class="champ-avatar" style="background:'+avatarColor(champ)+'">'+escapeHtml(initials(champ))+'</div>') +
+        '<div class="champ-hero-info">'+
+          '<div class="champ-hero-label">♛ Campeón del día</div>'+
+          '<div class="champ-hero-name">'+escapeHtml(champ)+'</div>'+
+          (champEntry&&champEntry.deck? '<div class="champ-hero-deck">'+escapeHtml(champEntry.deck)+'</div>':'')+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">'+
+          (canEditPhoto(champ)? '<button class="btn btn-sm btn-ghost" data-action="edit-photo" data-player="'+escapeHtml(champ)+'">'+(champPhoto?"Cambiar foto":"+ Agregar foto")+'</button>':'')+
+          '<button class="btn btn-sm btn-ghost" data-action="open-gallery" data-tid="'+escapeHtml(t.id)+'">Galería de Imágenes</button>'+
+          (writable? '<button class="btn btn-sm btn-ghost" data-action="open-gallery" data-tid="'+escapeHtml(t.id)+'">Subir Imágenes</button>':'')+
+        '</div>'+
+      '</div>'
+    ) : "";
+
+    return '<a class="back-link" href="'+fmtPath("torneos")+'">← Volver a '+torneosLabel().toLowerCase()+'</a>'+
+      '<div class="detail-head"><div class="detail-title"><h2>'+escapeHtml(t.name||"Fecha")+(t.example?' <span class="example-flag">(ejemplo)</span>':'')+'</h2>'+
+      '<div class="detail-meta"><span>'+fmtDate(t.date)+'</span></div></div>'+
+      (writable? '<div style="display:flex;gap:8px;"><button class="btn" data-action="edit-tournament" data-id="'+escapeHtml(t.id)+'">Editar</button><button class="btn btn-danger" data-action="delete-tournament" data-id="'+escapeHtml(t.id)+'">Eliminar</button></div>':'')+
+      '</div>'+
+      heroHtml+
+      '<div class="table-wrap"><table><thead><tr><th>#</th><th>Jugador</th><th>Mazo</th><th>Puntos</th>'+(showDecklists?'<th></th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      (dstats.rows.length? '<section style="margin-top:26px"><h2>Mazos de la fecha</h2><div class="card" style="padding:18px 20px;"><div class="bar-rows">'+bars+'</div></div></section>':'');
+  }
+
+  function playerDetail(state, name){
+    var key = (name||"").trim();
+    var championBonus = (state.config && typeof state.config.championBonus==="number") ? state.config.championBonus : 6;
+    var subcampeonBonus = (state.config && typeof state.config.subcampeonBonus==="number") ? state.config.subcampeonBonus : 3;
+    var rows = [], totalPoints = 0, championships = 0, top4 = 0;
+    var deckMap = new Map();
+    state.tournaments.forEach(function(t){
+      var entry = t.standings.find(function(s){ return (s.player||"").trim()===key; });
+      if(!entry) return;
+      var champ = (t.champion||"").trim(), sub = (t.subcampeon||"").trim();
+      var top4Set = new Set(top4Members(t));
+      var basePts = Number(entry.points)||0, bonus = 0, role = "";
+      if(champ && key===champ){ bonus = championBonus; role = "champion"; championships++; }
+      else if(sub && key===sub){ bonus = subcampeonBonus; role = "subcampeon"; }
+      else if(top4Set.has(key)) role = "top4";
+      if(top4Set.has(key)) top4++;
+      totalPoints += basePts+bonus;
+      var sortedStandings = t.standings.slice().sort(function(a,b){ return (Number(b.points)||0)-(Number(a.points)||0); });
+      var ranks = tieRanks(sortedStandings.map(function(s){return {points:Number(s.points)||0};}));
+      var idx = sortedStandings.findIndex(function(s){ return (s.player||"").trim()===key; });
+      rows.push({ id:t.id, name:t.name||"Fecha", date:t.date, deck:entry.deck||"", basePts:basePts, bonus:bonus, role:role, pos: idx>-1?ranks[idx]:null });
+      var dkey = (entry.deck||"").trim();
+      if(dkey) deckMap.set(dkey, (deckMap.get(dkey)||0)+1);
+    });
+    rows.sort(function(a,b){ return a.date<b.date?1:-1; });
+    var deckUsage = Array.from(deckMap.entries()).map(function(e){ return {deck:e[0], count:e[1]}; })
+      .sort(function(a,b){ return b.count-a.count || a.deck.localeCompare(b.deck); });
+    return { player:key, totalPoints:totalPoints, played:rows.length, championships:championships, top4:top4, rows:rows, deckUsage:deckUsage };
+  }
+
+  function renderJugadorDetail(state, name){
+    var d = playerDetail(state, name);
+    if(!d.played){
+      return '<a class="back-link" href="'+fmtPath("general")+'">← Volver a la tabla general</a><div class="card empty-state">No encontramos a ese jugador.</div>';
+    }
+    var photo = photoFor(state, d.player);
+    var heroHtml = '<div class="champ-hero">'+
+      (photo?
+        '<img class="champ-photo" src="'+escapeHtml(photo)+'" alt="Foto de '+escapeHtml(d.player)+'">' :
+        '<div class="champ-avatar" style="background:'+avatarColor(d.player)+'">'+escapeHtml(initials(d.player))+'</div>') +
+      '<div class="champ-hero-info">'+
+        '<div class="champ-hero-label">Perfil de jugador</div>'+
+        '<div class="champ-hero-name">'+escapeHtml(d.player)+'</div>'+
+        '<div class="champ-hero-deck">'+d.totalPoints+' pts totales · '+d.played+' fecha'+(d.played===1?"":"s")+(d.championships? ' · <span class="crown">♛</span> '+d.championships+' campeonato'+(d.championships===1?"":"s") : '')+'</div>'+
+      '</div>'+
+      (canEditPhoto(d.player)? '<button class="btn btn-sm btn-ghost" data-action="edit-photo" data-player="'+escapeHtml(d.player)+'">'+(photo?"Cambiar foto":"+ Agregar foto")+'</button>':'')+
+    '</div>';
+
+    var stats = '<div class="stat-grid">'+
+      '<div class="stat-tile"><div class="stat-label">Puntos totales</div><div class="stat-value">'+d.totalPoints+'</div><div class="stat-sub">con bonos incluidos</div></div>'+
+      '<div class="stat-tile"><div class="stat-label">Campeonatos</div><div class="stat-value">'+d.championships+'</div><div class="stat-sub">'+(d.championships? 'de '+d.played+' fechas':'todavía ninguno')+'</div></div>'+
+      '<div class="stat-tile"><div class="stat-label">Top 4</div><div class="stat-value">'+d.top4+'</div><div class="stat-sub">de '+d.played+' fechas jugadas</div></div>'+
+      '</div>';
+
+    var rows = d.rows.map(function(r){
+      var badge = "";
+      if(r.role==="champion") badge = ' <span class="crown" title="Campeón">♛</span>';
+      else if(r.role==="subcampeon") badge = ' <span class="pill" style="margin-left:4px">Subcampeón</span>';
+      else if(r.role==="top4") badge = ' <span class="pill" style="margin-left:4px">Top 4</span>';
+      return '<tr class="'+(r.role==="champion"?"rank-1":"")+'">'+
+        '<td><span class="pos-badge '+(r.role==="champion"?"pos-1":(r.pos&&r.pos<=4?"pos-2":""))+'">'+(r.pos||"—")+'</span></td>'+
+        '<td><a href="'+fmtPath("torneo/"+encodeURIComponent(r.id))+'">'+escapeHtml(r.name)+'</a>'+badge+'</td>'+
+        '<td>'+fmtDate(r.date)+'</td>'+
+        '<td>'+(r.deck && currentFormat!=="draft" ? '<a href="'+fmtPath("decklist/"+encodeURIComponent(r.id)+"/"+encodeURIComponent(d.player))+'">'+escapeHtml(r.deck)+'</a>' : escapeHtml(r.deck||"—"))+'</td>'+
+        '</tr>';
+    }).join("");
+
+    var deckBars = d.deckUsage.map(function(r){
+      var pct = d.played? (r.count/d.played*100):0;
+      return '<div class="bar-row"><div class="bar-name" title="'+escapeHtml(r.deck)+'">'+escapeHtml(r.deck)+'</div>'+
+        '<div class="bar-track"><div class="bar-fill" style="width:'+pct.toFixed(1)+'%"></div></div>'+
+        '<div class="bar-pct num">'+r.count+'</div></div>';
+    }).join("");
+
+    return '<a class="back-link" href="'+fmtPath("general")+'">← Volver a la tabla general</a>'+
+      heroHtml+stats+
+      '<section><h2>Historial de fechas</h2><div class="table-wrap"><table><thead><tr><th>Posición</th><th>Torneo</th><th>Fecha</th><th>Mazo</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>'+
+      (d.deckUsage.length>1? '<section style="margin-top:26px"><h2>Mazos usados</h2><div class="card" style="padding:18px 20px;"><div class="bar-rows">'+deckBars+'</div></div></section>':'');
+  }
+
+  function renderMazos(state){
+    var filter = ui.mazosFilter;
+    var dstats = deckStats(state, filter||null);
+    var options = '<option value="">Todas las fechas</option>'+state.tournaments.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(t){
+      return '<option value="'+escapeHtml(t.id)+'" '+(filter===t.id?"selected":"")+'>'+escapeHtml(t.name||"Fecha")+' · '+fmtDate(t.date)+'</option>';
+    }).join("");
+    var rows = dstats.rows.map(function(r){
+      return '<tr><td>'+escapeHtml(r.deck)+'</td><td class="num">'+r.count+'</td>'+
+        '<td class="num">'+r.pct.toFixed(1)+'%</td>'+
+        '<td class="wrap">'+r.players.map(function(p){return '<a href="'+fmtPath("jugador/"+encodeURIComponent(p))+'">'+escapeHtml(p)+'</a>';}).join(", ")+'</td></tr>';
+    }).join("");
+    var tableHtml = dstats.rows.length ? (
+      '<div class="table-wrap"><table><thead><tr><th>Mazo</th><th>Apariciones</th><th>% del total</th><th class="wrap">Jugadores</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    ) : '<div class="card empty-state">No hay mazos cargados todavía.</div>';
+
+    return '<section><div class="section-head"><h2>Representación de mazos</h2>'+
+      '<select class="select-filter" onchange="window.__setMazosFilter(this.value)">'+options+'</select>'+
+      '</div>'+tableHtml+'</section>';
+  }
+
+  function renderDecklistPage(state, route){
+    var dv = decklistView;
+    if(!dv) return '<div class="card empty-state">Cargando…</div>';
+    var backLink = '<a class="back-link" href="'+fmtPath("torneo/"+encodeURIComponent(dv.tid))+'">← Volver al torneo</a>';
+    if(dv.loading) return backLink+'<div class="card empty-state">Cargando decklist…</div>';
+    if(dv.error) return backLink+'<div class="card empty-state">'+escapeHtml(dv.error)+'</div>';
+
+    var srcTournament = (STATE.tournaments||[]).find(function(x){return x.id===dv.tid;});
+    var standingEntry = srcTournament ? srcTournament.standings.find(function(s){return (s.player||"").trim()===dv.playerName;}) : null;
+    var deckName = standingEntry && standingEntry.deck ? standingEntry.deck.trim() : "";
+    var pageTitle = deckName ? deckName+" - "+dv.playerName : "Decklist de "+dv.playerName;
+
+    var ed = ui.decklistEdit;
+    var editingThis = ed && ed.tid===dv.tid && ed.playerName===dv.playerName;
+    var editorHtml = "";
+    var canEditDecklist = writable || currentPlayerName()===dv.playerName;
+    if(canEditDecklist){
+      if(!editingThis){
+        editorHtml = '<div style="margin-bottom:18px"><button type="button" class="btn btn-sm" data-action="open-decklist-edit" data-tid="'+escapeHtml(dv.tid)+'" data-name="'+escapeHtml(dv.playerName)+'">'+(dv.notFound?"+ Cargar decklist":"Editar decklist")+'</button></div>';
+      } else {
+        editorHtml = '<div class="card" style="padding:16px 18px;margin-bottom:20px">'+
+          '<form onsubmit="return window.__submitDecklist(event)">'+
+          '<div class="field full" style="margin-bottom:10px"><label>Comandante (solo Commander, opcional)</label><input type="text" value="'+escapeHtml(ed.commander)+'" oninput="window.__updateDecklistDraft(\'commander\',this.value)"></div>'+
+          '<div class="field full" style="margin-bottom:10px"><label>Lista (una carta por línea: "4 Lightning Bolt"). Para el sideboard, agregá una línea que diga "Sideboard" antes de esas cartas.</label>'+
+          '<textarea rows="12" style="width:100%;font-family:&quot;IBM Plex Mono&quot;,monospace;font-size:13px;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg);color:var(--text)" oninput="window.__updateDecklistDraft(\'raw\',this.value)">'+escapeHtml(ed.raw)+'</textarea></div>'+
+          (ed.error? '<div class="field-error">'+escapeHtml(ed.error)+'</div>':'')+
+          '<div class="modal-actions">'+
+            '<button type="button" class="btn" data-action="close-decklist-edit">Cancelar</button>'+
+            '<button type="submit" class="btn btn-primary" '+(ed.saving?"disabled":"")+'>'+(ed.saving?"Guardando…":"Guardar decklist")+'</button>'+
+          '</div></form></div>';
+      }
+    }
+
+    if(dv.notFound && !editingThis){
+      return backLink+'<h2>'+escapeHtml(pageTitle)+'</h2>'+editorHtml+'<div class="card empty-state">Todavía no hay decklist cargada para esta fecha.</div>';
+    }
+    if(dv.notFound && editingThis){
+      return backLink+'<h2>'+escapeHtml(pageTitle)+'</h2>'+editorHtml;
+    }
+
+    var commanderHtml = dv.commander ? (
+      '<div class="decklist-commander"><h4 style="margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2)">Comandante</h4>'+
+      '<div class="decklist-row" data-img="'+escapeHtml(dv.commander.image_url)+'" data-name="'+escapeHtml(dv.commander.name)+'" onmouseover="window.__previewCard(this)"><span class="num">1</span><span>'+escapeHtml(dv.commander.name)+'</span></div></div>'
+    ) : "";
+
+    var totalCount = dv.groups.reduce(function(sum,g){ return sum + g.cards.reduce(function(s,c){return s+c.qty;},0); }, 0);
+
+    var groupsHtml = dv.groups.map(function(g){
+      var count = g.cards.reduce(function(s,c){return s+c.qty;},0);
+      return '<div class="decklist-group"><h4>'+g.label+' <span class="decklist-count">('+count+')</span></h4>'+
+        g.cards.map(function(c){
+          return '<div class="decklist-row" data-img="'+escapeHtml(c.image_url)+'" data-name="'+escapeHtml(c.name)+'" onmouseover="window.__previewCard(this)"><span class="num">'+c.qty+'</span><span>'+escapeHtml(c.name)+'</span></div>';
+        }).join("")+
+      '</div>';
+    }).join("");
+
+    var sideboardCount = dv.sideboard.reduce(function(s,c){return s+c.qty;},0);
+    var sideboardHtml = dv.sideboard.length ? (
+      '<div class="decklist-group"><h4>Sideboard <span class="decklist-count">('+sideboardCount+')</span></h4>'+
+        dv.sideboard.map(function(c){
+          return '<div class="decklist-row" data-img="'+escapeHtml(c.image_url)+'" data-name="'+escapeHtml(c.name)+'" onmouseover="window.__previewCard(this)"><span class="num">'+c.qty+'</span><span>'+escapeHtml(c.name)+'</span></div>';
+        }).join("")+
+      '</div>'
+    ) : "";
+
+    var missingHtml = dv.missing.length ? '<div class="decklist-missing">No se encontraron en Scryfall (revisá el nombre): '+dv.missing.map(escapeHtml).join(", ")+'</div>' : "";
+
+    var firstImg = (dv.commander && dv.commander.image_url) ? dv.commander.image_url : ((dv.groups[0] && dv.groups[0].cards[0]) ? dv.groups[0].cards[0].image_url : "");
+
+    return backLink+
+      '<div class="detail-head"><div class="detail-title"><h2>'+escapeHtml(pageTitle)+'</h2>'+
+      '<div class="detail-meta"><span>'+totalCount+' cartas'+(dv.commander?" + comandante":"")+(sideboardCount?" + "+sideboardCount+" sideboard":"")+'</span></div></div></div>'+
+      editorHtml+
+      '<div class="decklist-layout">'+
+        '<div class="decklist-columns">'+
+          '<div class="decklist-col">'+commanderHtml+groupsHtml+missingHtml+'</div>'+
+          (sideboardHtml? '<div class="decklist-col">'+sideboardHtml+'</div>' : '')+
+        '</div>'+
+        '<div class="decklist-side"><div class="decklist-preview-box" id="decklist-preview">'+
+          (firstImg? '<img id="decklist-preview-img" src="'+escapeHtml(firstImg)+'" alt="">' : '<div class="decklist-preview-placeholder">Pasá el mouse sobre una carta para verla acá</div>')+
+        '</div></div>'+
+      '</div>';
+  }
+
+  function renderModal(state){
+    if(!ui.modalOpen) return "";
+    var d = ui.draft;
+    var players = (state.playersFull||[]).map(function(p){return p.name;}), decks = allDecks(state);
+    var draftPlayers = Array.from(new Set(d.rows.map(function(r){return r.player.trim();}).filter(Boolean)));
+    var rowsHtml = d.rows.map(function(r,i){
+      return '<div class="row-item">'+
+        '<div class="row-pos">'+(i+1)+'</div>'+
+        '<input list="dl-players" placeholder="Jugador" value="'+escapeHtml(r.player)+'" oninput="window.__updateRow('+i+',\'player\',this.value)">'+
+        '<input list="dl-decks" placeholder="Mazo" value="'+escapeHtml(r.deck)+'" oninput="window.__updateRow('+i+',\'deck\',this.value)">'+
+        '<input class="row-points" type="number" step="1" placeholder="Puntos" value="'+escapeHtml(r.points)+'" oninput="window.__updateRow('+i+',\'points\',this.value)">'+
+        '<button type="button" class="row-del" title="Quitar" onclick="window.__removeRow('+i+')">✕</button>'+
+        '</div>';
+    }).join("");
+
+    var isDraftFormat = d.format==="draft";
+    var top4Fields = d.hasTop4 ? (
+      '<div class="form-grid" style="margin-top:2px">'+
+        '<div class="field"><label>Campeón</label><input list="dl-draft-players" value="'+escapeHtml(d.champion)+'" oninput="window.__updateMeta(\'champion\',this.value)"></div>'+
+        '<div class="field"><label>Subcampeón</label><input list="dl-draft-players" value="'+escapeHtml(d.subcampeon)+'" oninput="window.__updateMeta(\'subcampeon\',this.value)"></div>'+
+        '<div class="field"><label>Top 4 (3°)</label><input list="dl-draft-players" value="'+escapeHtml(d.top4a)+'" oninput="window.__updateMeta(\'top4a\',this.value)"></div>'+
+        '<div class="field"><label>Top 4 (4°)</label><input list="dl-draft-players" value="'+escapeHtml(d.top4b)+'" oninput="window.__updateMeta(\'top4b\',this.value)"></div>'+
+      '</div>'+
+      '<div class="settings-hint">Elegí nombres de los jugadores cargados arriba. El campeón y el subcampeón suman el bono configurado en ⚙︎ además de sus puntos de torneo.</div>'
+    ) : "";
+    var winnerField = isDraftFormat ? (
+      '<div class="form-grid" style="margin-top:2px">'+
+        '<div class="field full"><label>Ganador</label><input list="dl-draft-players" value="'+escapeHtml(d.champion)+'" oninput="window.__updateMeta(\'champion\',this.value)"></div>'+
+      '</div>'+
+      '<div class="settings-hint">Elegí el nombre de quien ganó el draft, de los jugadores cargados arriba.</div>'
+    ) : "";
+
+    return '<div class="modal-backdrop" data-action="backdrop">'+
+      '<div class="modal" role="dialog" aria-modal="true">'+
+      '<h3>'+(ui.modalMode==="edit"?"Editar fecha":"Nueva fecha")+'</h3>'+
+      '<form onsubmit="return window.__submitForm(event)">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Fecha</label><input type="date" required value="'+escapeHtml(d.date)+'" oninput="window.__updateMeta(\'date\',this.value)"></div>'+
+        '<div class="field"><label>Nombre</label><input type="text" placeholder="Fecha '+(state.tournaments.length+1)+'" value="'+escapeHtml(d.name)+'" oninput="window.__updateMeta(\'name\',this.value)"></div>'+
+        '<div class="field"><label>Formato</label><select class="select-filter" onchange="window.__updateMeta(\'format\',this.value)">'+FORMAT_TABS.map(function(f){return '<option value="'+f.slug+'" '+(f.slug===d.format?"selected":"")+'>'+escapeHtml(f.label)+'</option>';}).join("")+'</select></div>'+
+      '</div>'+
+      '<div class="rows-head"><span></span><span>Jugador</span><span>Mazo</span><span>Puntos</span><span></span></div>'+
+      '<div id="rows-container">'+rowsHtml+'</div>'+
+      '<button type="button" class="btn btn-sm" style="margin-top:6px" onclick="window.__addRow()">+ Agregar jugador</button>'+
+      (isDraftFormat ? winnerField : (
+        '<div class="field" style="flex-direction:row;align-items:center;gap:8px;margin-top:16px"><input type="checkbox" id="has-top4" '+(d.hasTop4?"checked":"")+' onchange="window.__toggleTop4(this.checked)"><label for="has-top4" style="font-size:13.5px;color:var(--text)">Esta fecha tuvo Top 4</label></div>'+
+        top4Fields
+      ))+
+      (ui.formError? '<div class="field-error">'+escapeHtml(ui.formError)+'</div>':'')+
+      '<div class="modal-actions">'+
+        '<button type="button" class="btn" onclick="window.__closeModal()">Cancelar</button>'+
+        '<button type="submit" class="btn btn-primary" '+(ui.saving?'disabled':'')+'>'+(ui.saving?"Guardando…":"Guardar fecha")+'</button>'+
+      '</div>'+
+      '</form>'+
+      '<datalist id="dl-players">'+players.map(function(p){return '<option value="'+escapeHtml(p)+'">';}).join("")+'</datalist>'+
+      '<datalist id="dl-decks">'+decks.map(function(p){return '<option value="'+escapeHtml(p)+'">';}).join("")+'</datalist>'+
+      '<datalist id="dl-draft-players">'+draftPlayers.map(function(p){return '<option value="'+escapeHtml(p)+'">';}).join("")+'</datalist>'+
+      '</div></div>';
+  }
+
+  function renderSettings(state){
+    if(!ui.settingsOpen) return "";
+    return '<div class="modal-backdrop" data-action="backdrop-settings">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:420px">'+
+      '<h3>Configurar bono de Top 4</h3>'+
+      '<div class="settings-hint">En la tabla general, el campeón y el subcampeón de cada fecha suman este bono además de sus puntos de torneo. No afecta la tabla de cada torneo individual.</div>'+
+      '<form onsubmit="return window.__submitSettings(event)">'+
+      '<div class="form-grid">'+
+        '<div class="field"><label>Bono campeón</label><input type="number" step="1" value="'+escapeHtml(ui.championBonusDraft)+'" oninput="window.__updateBonusDraft(\'championBonusDraft\',this.value)"></div>'+
+        '<div class="field"><label>Bono subcampeón</label><input type="number" step="1" value="'+escapeHtml(ui.subcampeonBonusDraft)+'" oninput="window.__updateBonusDraft(\'subcampeonBonusDraft\',this.value)"></div>'+
+      '</div>'+
+      (ui.settingsError? '<div class="field-error">'+escapeHtml(ui.settingsError)+'</div>':'')+
+      '<div class="modal-actions">'+
+        '<button type="button" class="btn" onclick="window.__closeSettings()">Cancelar</button>'+
+        '<button type="submit" class="btn btn-primary">Guardar</button>'+
+      '</div></form></div></div>';
+  }
+
+  function isDataUrl(v){ return typeof v==="string" && v.indexOf("data:")===0; }
+
+  function renderPhotoModal(state){
+    if(!ui.photo.open) return "";
+    var current = photoFor(state, ui.photo.player);
+    var preview = ui.photo.value;
+    var urlFieldValue = isDataUrl(preview) ? "" : preview;
+    return '<div class="modal-backdrop" data-action="backdrop-photo">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:420px">'+
+      '<h3>Foto de '+escapeHtml(ui.photo.player)+'</h3>'+
+      (preview? '<div style="display:flex;justify-content:center;margin-bottom:16px"><img src="'+escapeHtml(preview)+'" alt="Vista previa" style="width:120px;height:120px;border-radius:50%;object-fit:cover;object-position:top;border:3px solid var(--accent)"></div>':'')+
+      '<div class="field full" style="margin-bottom:14px"><label>Elegí una imagen del dispositivo</label><input type="file" accept="image/*" onchange="window.__handlePhotoFile(this)"></div>'+
+      '<div class="settings-hint">O pegá la URL de una imagen ya subida a internet:</div>'+
+      '<form onsubmit="return window.__submitPhoto(event)">'+
+      '<div class="field full" style="margin-bottom:18px"><label>URL de imagen</label><input type="text" placeholder="https://…" value="'+escapeHtml(urlFieldValue)+'" oninput="window.__updatePhotoDraft(this.value)"></div>'+
+      '<div class="modal-actions">'+
+        (current? '<button type="button" class="btn btn-danger" style="margin-right:auto" onclick="window.__removePhotoNow()">Quitar foto</button>':'')+
+        '<button type="button" class="btn" onclick="window.__closePhoto()">Cancelar</button>'+
+        '<button type="submit" class="btn btn-primary">Guardar</button>'+
+      '</div></form></div></div>';
+  }
+
+  function renderConfirmModal(){
+    if(!ui.confirm.open) return "";
+    return '<div class="modal-backdrop" data-action="backdrop-confirm">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:420px">'+
+      '<h3>Confirmar</h3>'+
+      '<div class="settings-hint" style="margin-bottom:18px">'+escapeHtml(ui.confirm.message)+'</div>'+
+      '<div class="modal-actions">'+
+        '<button type="button" class="btn" onclick="window.__confirmNo()">Cancelar</button>'+
+        '<button type="button" class="btn btn-danger" onclick="window.__confirmYes()">'+escapeHtml(ui.confirm.confirmLabel)+'</button>'+
+      '</div></div></div>';
+  }
+
+  function renderLoginModal(){
+    if(!ui.login || !ui.login.open) return "";
+    var l = ui.login;
+    return '<div class="modal-backdrop" data-action="backdrop-login">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:380px">'+
+      '<h3>Iniciar sesión</h3>'+
+      '<form onsubmit="return window.__submitLogin(event)">'+
+      '<div class="field full" style="margin-bottom:12px"><label>Email</label><input type="email" required value="'+escapeHtml(l.email)+'" oninput="window.__updateLoginEmail(this.value)"></div>'+
+      '<div class="field full" style="margin-bottom:14px"><label>Contraseña</label><input type="password" required value="'+escapeHtml(l.password||"")+'" oninput="window.__updateLoginPassword(this.value)"></div>'+
+      (l.error? '<div class="field-error">'+escapeHtml(l.error)+'</div>':'')+
+      '<div class="modal-actions">'+
+        '<button type="button" class="btn" onclick="window.__closeLogin()">Cancelar</button>'+
+        '<button type="submit" class="btn btn-primary" '+(l.sending?"disabled":"")+'>'+(l.sending?"Ingresando…":"Ingresar")+'</button>'+
+      '</div></form>'+
+      '</div></div>';
+  }
+
+  function renderAccountsModal(state){
+    if(!ui.accounts || !ui.accounts.open) return "";
+    var a = ui.accounts;
+    var last = a.lastCreated;
+    var playerSection = "";
+    if(writable){
+      var players = state.playersFull || [];
+      var rows = players.map(function(p){
+        var f = a.forms[p.id] || {email:"", password:"", saving:false, error:""};
+        return '<div class="card" style="padding:12px 14px;margin-bottom:10px">'+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">'+
+            '<strong>'+escapeHtml(p.name)+'</strong>'+
+            (p.hasAccess? '<span class="pill">Con acceso</span>' : '<span class="pill" style="opacity:.6">Sin acceso</span>')+
+          '</div>'+
+          '<form onsubmit="return window.__submitPlayerAccess(\''+p.id+'\',event)" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">'+
+            '<div class="field" style="flex:1 1 160px"><label>Email</label><input type="email" required value="'+escapeHtml(f.email)+'" oninput="window.__updatePlayerForm(\''+p.id+'\',\'email\',this.value)"></div>'+
+            '<div class="field" style="flex:1 1 140px"><label>Contraseña</label><input type="text" required value="'+escapeHtml(f.password)+'" oninput="window.__updatePlayerForm(\''+p.id+'\',\'password\',this.value)"></div>'+
+            '<button type="submit" class="btn btn-sm" '+(f.saving?"disabled":"")+'>'+(f.saving?"Guardando…":(p.hasAccess?"Actualizar acceso":"Crear acceso"))+'</button>'+
+          '</form>'+
+          (f.error? '<div class="field-error" style="margin-top:8px">'+escapeHtml(f.error)+'</div>':'')+
+        '</div>';
+      }).join("");
+      playerSection = (last? (
+        '<div class="example-banner" style="display:block">'+
+          '<strong>Acceso listo para '+escapeHtml(last.player)+'</strong><br>'+
+          'Email: '+escapeHtml(last.email)+'<br>Contraseña: '+escapeHtml(last.password)+'<br>'+
+          '<span style="font-size:12px">Copiá estos datos y pasáselos por fuera de esta página.</span>'+
+        '</div>'
+      ) : '')+
+      '<div class="settings-hint">Jugadores:</div>'+
+      rows;
+    }
+    return '<div class="modal-backdrop" data-action="backdrop-accounts">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:560px">'+
+      '<h3>'+(writable?"Gestionar accesos":"Mi cuenta")+'</h3>'+
+      '<div class="settings-hint">Tu contraseña (para entrar la próxima vez con email y contraseña):</div>'+
+      '<form onsubmit="return window.__saveMyPassword(event)" style="display:flex;gap:8px;align-items:flex-end;margin-bottom:18px">'+
+        '<div class="field" style="flex:1"><label>Nueva contraseña</label><input type="text" value="'+escapeHtml(a.myPassword)+'" oninput="window.__updateMyPasswordDraft(this.value)"></div>'+
+        '<button type="submit" class="btn btn-sm" '+(a.myPasswordSaving?"disabled":"")+'>'+(a.myPasswordSaving?"Guardando…":"Guardar")+'</button>'+
+      '</form>'+
+      (a.myPasswordMsg? '<div class="settings-hint" style="margin-top:-10px;margin-bottom:16px">'+escapeHtml(a.myPasswordMsg)+'</div>':'')+
+      playerSection+
+      '<div class="modal-actions"><button type="button" class="btn" onclick="window.__closeAccounts()">Cerrar</button></div>'+
+      '</div></div>';
+  }
+
+  function renderUpcomingModal(state){
+    if(!ui.upcoming || !ui.upcoming.open) return "";
+    var u = ui.upcoming;
+    var todayIso = new Date().toISOString().slice(0,10);
+    var events = (state.events||[]).filter(function(e){ return e.date >= todayIso; });
+    var myName = currentPlayerName();
+    var myPlayer = (state.playersFull||[]).find(function(p){ return p.name===myName; });
+    var createForm = writable ? (
+      '<form onsubmit="return window.__submitNewEvent(event)" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px">'+
+        '<div class="field" style="flex:1 1 140px"><label>Fecha</label><input type="date" required value="'+escapeHtml(u.newDate)+'" oninput="window.__updateUpcomingDraft(\'newDate\',this.value)"></div>'+
+        '<div class="field" style="flex:1 1 160px"><label>Nombre</label><input type="text" placeholder="Nombre de la fecha" required value="'+escapeHtml(u.newName)+'" oninput="window.__updateUpcomingDraft(\'newName\',this.value)"></div>'+
+        '<div class="field" style="flex:1 1 160px"><label>Notas (opcional)</label><input type="text" value="'+escapeHtml(u.newNotes)+'" oninput="window.__updateUpcomingDraft(\'newNotes\',this.value)"></div>'+
+        '<button type="submit" class="btn btn-sm btn-primary" '+(u.creating?"disabled":"")+'>'+(u.creating?"Creando…":"+ Agregar fecha")+'</button>'+
+      '</form>'+
+      (u.error? '<div class="field-error" style="margin-top:-10px;margin-bottom:14px">'+escapeHtml(u.error)+'</div>':'')
+    ) : "";
+    var list = events.length ? events.map(function(e){
+      var iRegistered = myPlayer && e.registeredIds.indexOf(myPlayer.id)>-1;
+      return '<div class="card" style="padding:12px 14px;margin-bottom:10px">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'+
+          '<div><strong>'+escapeHtml(e.name)+'</strong><div class="tourn-date">'+fmtDate(e.date)+'</div></div>'+
+          (myPlayer? '<button type="button" class="btn btn-sm '+(iRegistered?"btn-danger":"btn-primary")+'" onclick="window.__toggleRegistration(\''+e.id+'\')">'+(iRegistered?"Cancelar registro":"Registrarme")+'</button>' : '')+
+        '</div>'+
+        (e.notes? '<div class="settings-hint" style="margin:8px 0 0">'+escapeHtml(e.notes)+'</div>':'')+
+        '<div class="tourn-top4" style="margin-top:8px">'+(e.registeredNames.length? "Anotados: "+e.registeredNames.map(escapeHtml).join(", ") : "Todavía nadie se anotó.")+'</div>'+
+      '</div>';
+    }).join("") : '<div class="card empty-state">No hay fechas próximas cargadas todavía.</div>';
+    return '<div class="modal-backdrop" data-action="backdrop-upcoming">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:560px">'+
+      '<h3>Próximas fechas</h3>'+
+      createForm+
+      list+
+      '<div class="modal-actions"><button type="button" class="btn" onclick="window.__closeUpcoming()">Cerrar</button></div>'+
+      '</div></div>';
+  }
+
+  function renderGalleryModal(state){
+    var g = ui.gallery;
+    if(!g || !g.open) return "";
+    var uploadSection = writable ? (
+      '<div class="field full" style="margin-bottom:16px"><label>Subir imágenes</label>'+
+      '<input type="file" accept="image/*" multiple onchange="window.__handleGalleryUpload(this)" '+(g.uploading?"disabled":"")+'>'+
+      (g.uploading? '<div class="settings-hint">Subiendo…</div>':'')+
+      '</div>'
+    ) : "";
+    var body;
+    if(g.loading){
+      body = '<div class="card empty-state">Cargando…</div>';
+    } else if(g.viewIndex!=null && g.photos[g.viewIndex]){
+      var p = g.photos[g.viewIndex];
+      body = '<div style="text-align:center">'+
+        '<img src="'+escapeHtml(p.url)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:12px">'+
+        '<div class="modal-actions" style="justify-content:center">'+
+          '<button type="button" class="btn btn-sm" data-action="close-photo-view">← Volver a la galería</button>'+
+          (writable? '<button type="button" class="btn btn-sm btn-danger" data-action="delete-photo" data-id="'+p.id+'" data-path="'+escapeHtml(p.path)+'">Eliminar</button>':'')+
+        '</div>'+
+      '</div>';
+    } else if(!g.photos.length){
+      body = '<div class="card empty-state">Todavía no hay fotos de esta fecha.</div>';
+    } else {
+      body = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">'+
+        g.photos.map(function(p,i){
+          return '<img src="'+escapeHtml(p.url)+'" style="width:100%;height:110px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid var(--border)" data-action="view-photo" data-idx="'+i+'">';
+        }).join("")+
+      '</div>';
+    }
+    return '<div class="modal-backdrop" data-action="backdrop-gallery">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:640px">'+
+      '<h3>Galería de imágenes</h3>'+
+      uploadSection+
+      (g.error? '<div class="field-error">'+escapeHtml(g.error)+'</div>':'')+
+      body+
+      '<div class="modal-actions"><button type="button" class="btn" data-action="close-gallery">Cerrar</button></div>'+
+      '</div></div>';
+  }
+
+  function renderApp(state, route){
+    var scoped = Object.assign({}, state, {
+      tournaments: tournamentsForFormat(state, route.format),
+      events: eventsForFormat(state, route.format)
+    });
+    var main;
+    if(route.view==="torneos") main = renderTorneos(scoped);
+    else if(route.view==="torneo") main = renderTorneoDetail(scoped, route.id);
+    else if(route.view==="jugador") main = renderJugadorDetail(scoped, route.name);
+    else if(route.view==="mazos") main = renderMazos(scoped);
+    else if(route.view==="decklist") main = renderDecklistPage(scoped, route);
+    else main = renderGeneral(scoped);
+
+    return renderTopbar(route)+
+      '<main>'+main+'</main>'+
+      '<footer class="credit">Magic Delta · Ligas de Magic Zarate/Campana</footer>'+
+      renderModal(scoped)+renderSettings(scoped)+renderPhotoModal(scoped)+renderConfirmModal()+renderLoginModal()+renderAccountsModal(scoped)+renderUpcomingModal(scoped)+renderGalleryModal(scoped)+
+      (ui.toast? '<div class="toast">'+escapeHtml(ui.toast)+'</div>':'');
+  }
+
+  function render(){
+    var route = parseRoute();
+    currentFormat = route.format;
+    if(ui.booting){
+      document.getElementById("app").innerHTML = '<div style="padding:80px 20px;text-align:center;color:var(--text-dim)">Cargando…</div>';
+      return;
+    }
+    if(ui.bootError){
+      document.getElementById("app").innerHTML = '<div class="card empty-state" style="margin-top:40px">'+escapeHtml(ui.bootError)+'</div>';
+      return;
+    }
+    if(route.view==="decklist" && (!decklistView || decklistView.tid!==route.tid || decklistView.playerName!==route.name)){
+      loadDecklistView(route.tid, route.name);
+      return;
+    }
+    document.getElementById("app").innerHTML = renderApp(STATE, route);
+  }
+
+  // ---- data layer (Supabase) ----
+
+  var SUPABASE_URL = "https://oqammxtavbcpkfkdpkru.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_XQWiir6tIrddFm3wrxyM4w_jRvmiJtn";
+  var CREATE_LOGIN_FN_URL = SUPABASE_URL + "/functions/v1/create-player-login";
+  var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function showToast(msg){
+    ui.toast = msg; render();
+    setTimeout(function(){ ui.toast=null; render(); }, 3200);
+  }
+
+  function loadState(){
+    return Promise.all([
+      supabase.from("players").select("id,name,photo_url,user_id"),
+      supabase.from("format_config").select("format_id,champion_bonus,subcampeon_bonus"),
+      supabase.from("tournaments").select("id,format_id,date,name,champion_id,subcampeon_id,top4_extra_ids,example"),
+      supabase.from("standings").select("tournament_id,player_id,deck,points"),
+      supabase.from("events").select("id,format_id,date,name,notes"),
+      supabase.from("event_registrations").select("event_id,player_id")
+    ]).then(function(results){
+      results.forEach(function(r){ if(r.error) throw r.error; });
+      var players = results[0].data, configs = results[1].data, tournaments = results[2].data, standings = results[3].data;
+      var events = results[4].data, registrations = results[5].data;
+      var playerById = {}; players.forEach(function(p){ playerById[p.id] = p; });
+      var nameOf = function(id){ return (id && playerById[id]) ? playerById[id].name : ""; };
+      var playerPhotos = {};
+      players.forEach(function(p){ if(p.photo_url) playerPhotos[p.name] = p.photo_url; });
+      var standingsByTournament = {};
+      standings.forEach(function(s){
+        (standingsByTournament[s.tournament_id] = standingsByTournament[s.tournament_id]||[]).push({
+          player: nameOf(s.player_id), deck: s.deck||"", points: s.points
+        });
+      });
+      var tournamentsOut = tournaments.map(function(t){
+        return {
+          id: t.id, format: t.format_id, date: t.date, name: t.name, example: !!t.example,
+          champion: nameOf(t.champion_id), subcampeon: nameOf(t.subcampeon_id),
+          top4Extra: (t.top4_extra_ids||[]).map(nameOf).filter(Boolean),
+          standings: standingsByTournament[t.id] || []
+        };
+      });
+      var configByFormat = {};
+      configs.forEach(function(c){ configByFormat[c.format_id] = {championBonus:c.champion_bonus, subcampeonBonus:c.subcampeon_bonus}; });
+      var playersFull = players.map(function(p){ return {id:p.id, name:p.name, hasAccess: !!p.user_id, userId: p.user_id||null}; })
+        .sort(function(a,b){ return a.name.localeCompare(b.name); });
+      var regsByEvent = {};
+      registrations.forEach(function(r){
+        (regsByEvent[r.event_id] = regsByEvent[r.event_id]||[]).push(r.player_id);
+      });
+      var eventsOut = events.map(function(e){
+        var playerIds = regsByEvent[e.id] || [];
+        return {
+          id: e.id, format: e.format_id, date: e.date, name: e.name, notes: e.notes||"",
+          registeredIds: playerIds, registeredNames: playerIds.map(nameOf).filter(Boolean)
+        };
+      }).sort(function(a,b){ return a.date<b.date?-1:1; });
+      return { meta:{title:"Magic Delta"}, playerPhotos: playerPhotos, tournaments: tournamentsOut, configByFormat: configByFormat, playersFull: playersFull, events: eventsOut };
+    });
+  }
+
+  function refreshState(){
+    return loadState().then(function(state){ STATE = state; });
+  }
+
+  // ---- decklists ----
+
+  var CARD_TYPE_ORDER = ["Creature","Planeswalker","Battle","Instant","Sorcery","Artifact","Enchantment","Land"];
+  var CARD_TYPE_MATCH_ORDER = ["Land","Creature","Planeswalker","Battle","Instant","Sorcery","Artifact","Enchantment"];
+  var CARD_TYPE_LABELS = {
+    Creature:"Criaturas", Planeswalker:"Planeswalkers", Battle:"Batallas",
+    Instant:"Instantáneos", Sorcery:"Conjuros", Artifact:"Artefactos",
+    Enchantment:"Encantamientos", Land:"Tierras", Otros:"Otros"
+  };
+
+  function parseDecklistText(text){
+    var main = [], sideboard = [];
+    var mode = "main";
+    (text||"").split("\n").forEach(function(line){
+      line = line.trim();
+      if(!line) return;
+      if(/^(sideboard|side board|sb)\s*:?$/i.test(line)){ mode = "sideboard"; return; }
+      if(/^(deck|mainboard|main|commander|comandante)\s*:?$/i.test(line)){ mode = "main"; return; }
+      var m = line.match(/^(\d+)x?\s+(.+)$/i);
+      if(!m) return;
+      var name = m[2].replace(/\s*\[[^\]]*\]\s*$/,"").trim();
+      if(!name) return;
+      (mode==="sideboard"?sideboard:main).push({ qty: parseInt(m[1],10)||1, name: name });
+    });
+    return { main: main, sideboard: sideboard };
+  }
+
+  function primaryCardType(typeLine){
+    var left = (typeLine||"").split("—")[0];
+    for(var i=0;i<CARD_TYPE_MATCH_ORDER.length;i++){
+      if(left.indexOf(CARD_TYPE_MATCH_ORDER[i])>-1) return CARD_TYPE_MATCH_ORDER[i];
+    }
+    return "Otros";
+  }
+
+  function cardImageUrl(card){
+    if(!card) return "";
+    if(card.image_url) return card.image_url;
+    return "";
+  }
+
+  function resolveCards(names){
+    var unique = Array.from(new Set(names.filter(Boolean).map(function(n){ return n.trim(); }).filter(Boolean)));
+    if(!unique.length) return Promise.resolve({});
+    var keys = unique.map(function(n){ return n.toLowerCase(); });
+    return supabase.from("card_cache").select("*").in("name_key", keys).then(function(res){
+      if(res.error) throw res.error;
+      var byKey = {};
+      (res.data||[]).forEach(function(c){ byKey[c.name_key] = c; });
+      var missing = unique.filter(function(n){ return !byKey[n.toLowerCase()]; });
+      if(!missing.length) return byKey;
+      return fetchFromScryfall(missing).then(function(fetched){
+        fetched.forEach(function(c){ byKey[c.name_key] = c; });
+        if(fetched.length){
+          supabase.from("card_cache").upsert(fetched).then(function(){}).catch(function(){});
+        }
+        return byKey;
+      });
+    });
+  }
+
+  function fetchFromScryfall(names){
+    var chunks = [];
+    for(var i=0;i<names.length;i+=75) chunks.push(names.slice(i,i+75));
+    return Promise.all(chunks.map(function(chunk){
+      return fetch("https://api.scryfall.com/cards/collection", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ identifiers: chunk.map(function(n){ return {name:n}; }) })
+      }).then(function(r){ return r.json(); }).then(function(body){
+        return (body.data||[]).map(function(card){
+          var img = card.image_uris ? card.image_uris.normal :
+            (card.card_faces && card.card_faces[0] && card.card_faces[0].image_uris ? card.card_faces[0].image_uris.normal : "");
+          return {
+            name_key: card.name.toLowerCase(), name: card.name,
+            type_line: card.type_line||"", mana_cost: card.mana_cost||"",
+            image_url: img||"", scryfall_uri: card.scryfall_uri||""
+          };
+        });
+      }).catch(function(){ return []; });
+    })).then(function(results){
+      return results.reduce(function(a,b){ return a.concat(b); }, []);
+    });
+  }
+
+  var decklistView = null;
+
+  function loadDecklistView(tid, playerName){
+    decklistView = { tid:tid, playerName:playerName, loading:true, error:"", notFound:false, commander:null, groups:[], sideboard:[], missing:[], rawText:"" };
+    render();
+    var player = (STATE.playersFull||[]).find(function(p){ return p.name===playerName; });
+    if(!player){ decklistView.loading=false; decklistView.notFound=true; render(); return; }
+    supabase.from("decklists").select("raw_text,commander_name").eq("tournament_id",tid).eq("player_id",player.id).maybeSingle().then(function(res){
+      if(res.error) throw res.error;
+      if(!res.data){ decklistView.loading=false; decklistView.notFound=true; decklistView.rawText=""; render(); return; }
+      decklistView.rawText = res.data.raw_text||"";
+      var parsed = parseDecklistText(res.data.raw_text);
+      var names = parsed.main.concat(parsed.sideboard).map(function(e){return e.name;});
+      var commanderName = (res.data.commander_name||"").trim();
+      if(commanderName) names.push(commanderName);
+      return resolveCards(names).then(function(byKey){
+        var missing = [];
+        var byType = {};
+        parsed.main.forEach(function(e){
+          var card = byKey[e.name.toLowerCase()];
+          if(!card){ missing.push(e.name); return; }
+          var type = primaryCardType(card.type_line);
+          (byType[type] = byType[type]||[]).push({ qty:e.qty, name:card.name, image_url:cardImageUrl(card) });
+        });
+        var groups = CARD_TYPE_ORDER.concat(["Otros"]).map(function(t){
+          return { type:t, label:CARD_TYPE_LABELS[t], cards: (byType[t]||[]).sort(function(a,b){return a.name.localeCompare(b.name);}) };
+        }).filter(function(g){ return g.cards.length; });
+        var sideboard = [];
+        parsed.sideboard.forEach(function(e){
+          var card = byKey[e.name.toLowerCase()];
+          if(!card){ missing.push(e.name); return; }
+          sideboard.push({ qty:e.qty, name:card.name, image_url:cardImageUrl(card) });
+        });
+        sideboard.sort(function(a,b){return a.name.localeCompare(b.name);});
+        decklistView.groups = groups;
+        decklistView.sideboard = sideboard;
+        decklistView.missing = missing;
+        decklistView.commander = commanderName ? { name: commanderName, image_url: cardImageUrl(byKey[commanderName.toLowerCase()]) } : null;
+        decklistView.loading = false;
+        render();
+      });
+    }).catch(function(err){
+      decklistView.loading = false;
+      decklistView.error = err && err.message ? err.message : String(err);
+      render();
+    });
+  }
+
+  function ensurePlayers(names){
+    var unique = Array.from(new Set(names.filter(Boolean).map(function(n){ return n.trim(); }).filter(Boolean)));
+    if(!unique.length) return Promise.resolve({});
+    return supabase.from("players").upsert(unique.map(function(n){ return {name:n}; }), {onConflict:"name", ignoreDuplicates:true}).then(function(res){
+      if(res.error) throw res.error;
+      return supabase.from("players").select("id,name").in("name", unique);
+    }).then(function(res){
+      if(res.error) throw res.error;
+      var map = {};
+      res.data.forEach(function(p){ map[p.name] = p.id; });
+      return map;
+    });
+  }
+
+  function checkAdmin(){
+    return supabase.rpc("is_admin").then(function(res){ return !res.error && !!res.data; }).catch(function(){ return false; });
+  }
+
+  function refreshAuthState(){
+    return supabase.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      currentUser = session ? { id: session.user.id, email: session.user.email } : null;
+      if(!currentUser) return false;
+      return checkAdmin();
+    }).catch(function(){ currentUser = null; return false; });
+  }
+
+  function currentPlayerName(){
+    if(!currentUser || !STATE || !STATE.playersFull) return "";
+    var p = STATE.playersFull.find(function(x){ return x.userId===currentUser.id; });
+    return p ? p.name : "";
+  }
+  function canEditPhoto(name){
+    return writable || (!!name && currentPlayerName()===name);
+  }
+
+  function runWrite(fn){
+    ui.saving = true; render();
+    fn().then(function(){
+      return refreshState();
+    }).then(function(){
+      ui.saving = false; render();
+    }).catch(function(err){
+      ui.saving = false;
+      showToast("No se pudo guardar: "+(err && err.message ? err.message : "error desconocido"));
+      render();
+    });
+  }
+
+  // ---- form / modal controllers ----
+
+  window.__openCreateForm = function(){
+    ui.modalMode = "create"; ui.editingId = null; ui.formError = "";
+    ui.draft = { date:"", name:"", format:currentFormat, rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"" };
+    ui.modalOpen = true; render();
+  };
+  window.__openEditForm = function(id){
+    var t = STATE.tournaments.find(function(x){return x.id===id;});
+    if(!t) return;
+    ui.modalMode = "edit"; ui.editingId = id; ui.formError = "";
+    var extra = t.top4Extra||[];
+    ui.draft = {
+      date: t.date, name: t.name||"", format: t.format||currentFormat,
+      rows: t.standings.map(function(s){ return {player:s.player||"",deck:s.deck||"",points: (s.points==null?"":s.points)}; }),
+      hasTop4: !!t.champion, champion: t.champion||"", subcampeon: t.subcampeon||"",
+      top4a: extra[0]||"", top4b: extra[1]||""
+    };
+    ui.modalOpen = true; render();
+  };
+  window.__closeModal = function(){ ui.modalOpen = false; render(); };
+  window.__addRow = function(){ ui.draft.rows.push({player:"",deck:"",points:""}); render(); };
+  window.__removeRow = function(idx){
+    if(ui.draft.rows.length<=1) return;
+    ui.draft.rows.splice(idx,1); render();
+  };
+  window.__updateRow = function(idx, field, value){ ui.draft.rows[idx][field] = value; };
+  window.__updateMeta = function(field, value){ ui.draft[field] = value; if(field==="format") render(); };
+  window.__toggleTop4 = function(checked){ ui.draft.hasTop4 = checked; render(); };
+
+  window.__submitForm = function(ev){
+    ev.preventDefault();
+    var d = ui.draft;
+    if(!d.date){ ui.formError="Falta la fecha."; render(); return false; }
+    var rows = d.rows.filter(function(r){ return r.player && r.player.trim(); })
+      .map(function(r){ return {player:r.player.trim(), deck:(r.deck||"").trim(), points:Number(r.points)||0}; });
+    if(!rows.length){ ui.formError="Agregá al menos un jugador."; render(); return false; }
+    var rowNames = rows.map(function(r){return r.player.toLowerCase();});
+
+    var champion="", subcampeon="", top4Extra=[];
+    if(d.format==="draft"){
+      champion = (d.champion||"").trim();
+      if(!champion || rowNames.indexOf(champion.toLowerCase())===-1){ ui.formError="El ganador tiene que ser uno de los jugadores cargados arriba."; render(); return false; }
+    } else if(d.hasTop4){
+      champion = (d.champion||"").trim();
+      subcampeon = (d.subcampeon||"").trim();
+      if(!champion || rowNames.indexOf(champion.toLowerCase())===-1){ ui.formError="El campeón tiene que ser uno de los jugadores cargados arriba."; render(); return false; }
+      if(!subcampeon || rowNames.indexOf(subcampeon.toLowerCase())===-1){ ui.formError="El subcampeón tiene que ser uno de los jugadores cargados arriba."; render(); return false; }
+      if(subcampeon.toLowerCase()===champion.toLowerCase()){ ui.formError="El campeón y el subcampeón no pueden ser la misma persona."; render(); return false; }
+      [d.top4a, d.top4b].forEach(function(v){
+        var t = (v||"").trim();
+        if(t) top4Extra.push(t);
+      });
+    }
+    ui.formError = "";
+
+    var isEdit = ui.modalMode==="edit";
+    var tid = isEdit ? ui.editingId : uid();
+    var tname = d.name.trim() || ("Fecha "+(STATE.tournaments.length+1));
+    var fmt = d.format || currentFormat;
+    ui.modalOpen = false;
+    runWrite(function(){
+      var allNames = rows.map(function(r){return r.player;}).concat([champion, subcampeon]).concat(top4Extra);
+      return ensurePlayers(allNames).then(function(idByName){
+        var payload = {
+          id: tid, format_id: fmt, date: d.date, name: tname,
+          champion_id: champion ? idByName[champion] : null,
+          subcampeon_id: subcampeon ? idByName[subcampeon] : null,
+          top4_extra_ids: top4Extra.map(function(n){return idByName[n];}).filter(Boolean)
+        };
+        return supabase.from("tournaments").upsert(payload).then(function(res){
+          if(res.error) throw res.error;
+          return isEdit ? supabase.from("standings").delete().eq("tournament_id", tid) : {error:null};
+        }).then(function(res){
+          if(res.error) throw res.error;
+          var standingsPayload = rows.map(function(r){
+            return { tournament_id: tid, player_id: idByName[r.player], deck: r.deck, points: r.points };
+          });
+          return supabase.from("standings").insert(standingsPayload);
+        }).then(function(res){
+          if(res.error) throw res.error;
+        });
+      });
+    });
+    return false;
+  };
+
+  window.__setMazosFilter = function(val){ ui.mazosFilter = val; render(); };
+
+  window.__editTournamentAction = function(id){ window.__openEditForm(id); };
+  window.__deleteTournamentAction = function(id){
+    var t = STATE.tournaments.find(function(x){return x.id===id;});
+    if(!t) return;
+    window.__askConfirm('¿Eliminar "'+(t.name||"esta fecha")+'"? Esta acción no se puede deshacer.', function(){
+      runWrite(function(){
+        return supabase.from("tournaments").delete().eq("id", id).then(function(res){
+          if(res.error) throw res.error;
+        });
+      });
+    });
+  };
+
+  window.__editPhotoAction = function(player){
+    ui.photo = { open:true, player:player, value: photoFor(STATE, player) };
+    render();
+  };
+  window.__closePhoto = function(){ ui.photo.open = false; render(); };
+  window.__updatePhotoDraft = function(val){ ui.photo.value = val; };
+  window.__handlePhotoFile = function(inputEl){
+    var file = inputEl.files && inputEl.files[0];
+    if(!file) return;
+    if(file.size > 3*1024*1024){
+      showToast("La imagen es muy pesada (máx 3MB). Elegí una más liviana.");
+      inputEl.value = "";
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(){
+      ui.photo.value = reader.result;
+      render();
+    };
+    reader.readAsDataURL(file);
+  };
+  window.__removePhotoNow = function(){
+    ui.photo.value = "";
+    window.__submitPhoto();
+  };
+  window.__submitPhoto = function(ev){
+    if(ev) ev.preventDefault();
+    var player = ui.photo.player;
+    var trimmed = (ui.photo.value||"").trim();
+    ui.photo.open = false;
+    runWrite(function(){
+      if(!writable){
+        var mine = (STATE.playersFull||[]).find(function(p){ return p.name===player && p.userId===(currentUser&&currentUser.id); });
+        if(!mine) return Promise.reject(new Error("No podés editar la foto de otro jugador."));
+        return supabase.from("players").update({ photo_url: trimmed || null }).eq("id", mine.id).then(function(res){
+          if(res.error) throw res.error;
+        });
+      }
+      return ensurePlayers([player]).then(function(idByName){
+        return supabase.from("players").update({ photo_url: trimmed || null }).eq("id", idByName[player]);
+      }).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+    return false;
+  };
+
+  window.__askConfirm = function(message, action, confirmLabel){
+    ui.confirm = { open:true, message:message, action:action, confirmLabel: confirmLabel||"Eliminar" };
+    render();
+  };
+  window.__confirmYes = function(){
+    var action = ui.confirm.action;
+    ui.confirm.open = false;
+    render();
+    if(action) action();
+  };
+  window.__confirmNo = function(){ ui.confirm.open = false; render(); };
+
+  window.__previewCard = function(el){
+    var box = document.getElementById("decklist-preview");
+    if(!box) return;
+    var url = el.getAttribute("data-img")||"";
+    var name = el.getAttribute("data-name")||"";
+    if(url){
+      box.innerHTML = '<img id="decklist-preview-img" src="'+escapeHtml(url)+'" alt="'+escapeHtml(name)+'">';
+    } else {
+      box.innerHTML = '<div class="decklist-preview-placeholder">Sin imagen disponible<br>'+escapeHtml(name)+'</div>';
+    }
+  };
+
+  window.__openDecklistEdit = function(tid, playerName){
+    var existing = (decklistView && decklistView.tid===tid && decklistView.playerName===playerName) ? decklistView : null;
+    ui.decklistEdit = {
+      tid: tid, playerName: playerName,
+      commander: (existing && existing.commander) ? existing.commander.name : "",
+      raw: existing ? existing.rawText : "",
+      saving:false, error:""
+    };
+    render();
+  };
+  window.__closeDecklistEdit = function(){ ui.decklistEdit = null; render(); };
+  window.__updateDecklistDraft = function(field, value){ if(ui.decklistEdit) ui.decklistEdit[field] = value; };
+  window.__submitDecklist = function(ev){
+    ev.preventDefault();
+    var ed = ui.decklistEdit;
+    if(!ed) return false;
+    var entries = parseDecklistText(ed.raw);
+    if(!entries.main.length && !entries.sideboard.length){ ed.error = "Pegá al menos una carta (formato: \"4 Lightning Bolt\")."; render(); return false; }
+    ed.saving = true; ed.error = ""; render();
+    var tid = ed.tid, playerName = ed.playerName, raw = ed.raw, commander = (ed.commander||"").trim();
+    runWrite(function(){
+      var resolveId = writable
+        ? ensurePlayers([playerName]).then(function(idByName){ return idByName[playerName]; })
+        : Promise.resolve(((STATE.playersFull||[]).find(function(p){return p.name===playerName;})||{}).id);
+      return resolveId.then(function(playerId){
+        if(!playerId) throw new Error("No se encontró el jugador.");
+        return supabase.from("decklists").upsert({
+          tournament_id: tid, player_id: playerId,
+          commander_name: commander||null, raw_text: raw, updated_at: new Date().toISOString()
+        }, {onConflict:"tournament_id,player_id"}).then(function(res){
+          if(res.error) throw res.error;
+        });
+      });
+    });
+    ui.decklistEdit = null;
+    decklistView = null;
+    return false;
+  };
+
+  window.__openLogin = function(){ ui.login = { open:true, email:"", password:"", sending:false, error:"" }; render(); };
+  window.__closeLogin = function(){ ui.login.open = false; render(); };
+  window.__updateLoginEmail = function(v){ ui.login.email = v; };
+  window.__updateLoginPassword = function(v){ ui.login.password = v; };
+  window.__submitLogin = function(ev){
+    ev.preventDefault();
+    var email = (ui.login.email||"").trim().toLowerCase();
+    var password = ui.login.password||"";
+    if(!email || !password){ ui.login.error = "Completá email y contraseña."; render(); return false; }
+    ui.login.sending = true; ui.login.error = ""; render();
+    supabase.auth.signInWithPassword({ email: email, password: password }).then(function(res){
+      ui.login.sending = false;
+      if(res.error){ ui.login.error = "Email o contraseña incorrectos."; render(); return; }
+      ui.login.open = false; render();
+    });
+    return false;
+  };
+  window.__logout = function(){
+    supabase.auth.signOut().then(function(){ writable = false; currentUser = null; render(); });
+  };
+
+  window.__openAccounts = function(){
+    ui.accounts = { open:true, myPassword:"", myPasswordSaving:false, myPasswordMsg:"", forms:{}, lastCreated:null };
+    render();
+  };
+  window.__closeAccounts = function(){ ui.accounts.open = false; render(); };
+  window.__updateMyPasswordDraft = function(v){ ui.accounts.myPassword = v; };
+  window.__saveMyPassword = function(ev){
+    ev.preventDefault();
+    var pw = ui.accounts.myPassword||"";
+    if(pw.length<6){ ui.accounts.myPasswordMsg = "La contraseña tiene que tener al menos 6 caracteres."; render(); return false; }
+    ui.accounts.myPasswordSaving = true; ui.accounts.myPasswordMsg = ""; render();
+    supabase.auth.updateUser({ password: pw }).then(function(res){
+      ui.accounts.myPasswordSaving = false;
+      if(res.error){ ui.accounts.myPasswordMsg = res.error.message; }
+      else { ui.accounts.myPasswordMsg = "Listo, contraseña actualizada."; ui.accounts.myPassword = ""; }
+      render();
+    });
+    return false;
+  };
+  window.__updatePlayerForm = function(playerId, field, value){
+    ui.accounts.forms[playerId] = ui.accounts.forms[playerId] || {email:"", password:"", saving:false, error:""};
+    ui.accounts.forms[playerId][field] = value;
+  };
+  window.__submitPlayerAccess = function(playerId, ev){
+    ev.preventDefault();
+    var f = ui.accounts.forms[playerId] || {email:"", password:""};
+    var email = (f.email||"").trim();
+    var password = f.password||"";
+    if(!email || password.length<6){
+      f.error = "Completá email y una contraseña de al menos 6 caracteres.";
+      ui.accounts.forms[playerId] = f; render(); return false;
+    }
+    f.error = ""; f.saving = true; ui.accounts.forms[playerId] = f; render();
+    supabase.auth.getSession().then(function(sessionRes){
+      var token = sessionRes.data.session ? sessionRes.data.session.access_token : "";
+      return fetch(CREATE_LOGIN_FN_URL, {
+        method: "POST",
+        headers: { "Content-Type":"application/json", "Authorization":"Bearer "+token },
+        body: JSON.stringify({ playerId: playerId, email: email, password: password })
+      });
+    }).then(function(r){
+      return r.json().then(function(body){ return {ok:r.ok, body:body}; });
+    }).then(function(res){
+      f.saving = false;
+      if(!res.ok){ f.error = res.body.error || "No se pudo crear el acceso."; ui.accounts.forms[playerId] = f; render(); return; }
+      ui.accounts.lastCreated = { player: res.body.player, email: res.body.email, password: password };
+      ui.accounts.forms[playerId] = {email:"", password:"", saving:false, error:""};
+      return refreshState();
+    }).then(function(){
+      render();
+    }).catch(function(err){
+      f.saving = false; f.error = "Error: "+(err && err.message ? err.message : err);
+      ui.accounts.forms[playerId] = f; render();
+    });
+    return false;
+  };
+
+  window.__openUpcoming = function(){ ui.upcoming = { open:true, newDate:"", newName:"", newNotes:"", creating:false, error:"" }; render(); };
+  window.__closeUpcoming = function(){ ui.upcoming.open = false; render(); };
+  window.__updateUpcomingDraft = function(field, value){ ui.upcoming[field] = value; };
+  window.__submitNewEvent = function(ev){
+    ev.preventDefault();
+    var u = ui.upcoming;
+    if(!u.newDate || !u.newName.trim()){ u.error = "Completá la fecha y el nombre."; render(); return false; }
+    u.creating = true; u.error = "";
+    var payload = { format_id: currentFormat, date: u.newDate, name: u.newName.trim(), notes: (u.newNotes||"").trim()||null };
+    render();
+    runWrite(function(){
+      return supabase.from("events").insert(payload).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+    ui.upcoming = { open:true, newDate:"", newName:"", newNotes:"", creating:false, error:"" };
+    return false;
+  };
+  window.__toggleRegistration = function(eventId){
+    var myName = currentPlayerName();
+    var myPlayer = (STATE.playersFull||[]).find(function(p){ return p.name===myName; });
+    if(!myPlayer) return;
+    var ev = (STATE.events||[]).find(function(e){ return e.id===eventId; });
+    var already = ev && ev.registeredIds.indexOf(myPlayer.id)>-1;
+    runWrite(function(){
+      if(already){
+        return supabase.from("event_registrations").delete().eq("event_id", eventId).eq("player_id", myPlayer.id).then(function(res){
+          if(res.error) throw res.error;
+        });
+      }
+      return supabase.from("event_registrations").insert({event_id:eventId, player_id:myPlayer.id}).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+  };
+
+  window.__openGallery = function(tid){
+    ui.gallery = { open:true, tid:tid, photos:[], loading:true, error:"", uploading:false, viewIndex:null };
+    render();
+    supabase.from("tournament_photos").select("id,storage_path,uploaded_at").eq("tournament_id",tid).order("uploaded_at",{ascending:true}).then(function(res){
+      if(res.error) throw res.error;
+      ui.gallery.photos = (res.data||[]).map(function(p){
+        var pub = supabase.storage.from("tournament-photos").getPublicUrl(p.storage_path);
+        return { id:p.id, path:p.storage_path, url: pub.data.publicUrl };
+      });
+      ui.gallery.loading = false; render();
+    }).catch(function(err){
+      ui.gallery.loading = false;
+      ui.gallery.error = err && err.message ? err.message : String(err);
+      render();
+    });
+  };
+  window.__closeGallery = function(){ ui.gallery.open = false; ui.gallery.viewIndex = null; render(); };
+  window.__viewPhoto = function(idx){ ui.gallery.viewIndex = idx; render(); };
+  window.__closePhotoView = function(){ ui.gallery.viewIndex = null; render(); };
+  window.__handleGalleryUpload = function(inputEl){
+    var files = inputEl.files;
+    if(!files || !files.length) return;
+    var tid = ui.gallery.tid;
+    ui.gallery.uploading = true; ui.gallery.error = ""; render();
+    var uploads = Array.from(files).map(function(file){
+      var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      var path = tid+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"-"+safeName;
+      return supabase.storage.from("tournament-photos").upload(path, file).then(function(res){
+        if(res.error) throw res.error;
+        return supabase.from("tournament_photos").insert({tournament_id:tid, storage_path:path});
+      });
+    });
+    Promise.all(uploads).then(function(results){
+      results.forEach(function(res){ if(res && res.error) throw res.error; });
+      inputEl.value = "";
+      ui.gallery.uploading = false;
+      window.__openGallery(tid);
+    }).catch(function(err){
+      ui.gallery.uploading = false;
+      ui.gallery.error = "No se pudo subir: "+(err && err.message ? err.message : err);
+      render();
+    });
+  };
+  window.__deletePhoto = function(id, path){
+    window.__askConfirm("¿Eliminar esta foto? No se puede deshacer.", function(){
+      var tid = ui.gallery.tid;
+      ui.gallery.loading = true; ui.gallery.viewIndex = null; render();
+      supabase.storage.from("tournament-photos").remove([path]).then(function(){
+        return supabase.from("tournament_photos").delete().eq("id", id);
+      }).then(function(res){
+        if(res && res.error) throw res.error;
+        window.__openGallery(tid);
+      }).catch(function(err){
+        ui.gallery.loading = false;
+        ui.gallery.error = err && err.message ? err.message : String(err);
+        render();
+      });
+    }, "Eliminar");
+  };
+
+  window.__clearExamples = function(){
+    window.__askConfirm("¿Quitar las fechas de ejemplo? Vas a empezar con la tabla vacía.", function(){
+      runWrite(function(){
+        return supabase.from("tournaments").delete().eq("format_id", currentFormat).eq("example", true).then(function(res){
+          if(res.error) throw res.error;
+        });
+      });
+    }, "Quitar");
+  };
+
+  window.__openSettings = function(){
+    var cfg = (STATE.configByFormat && STATE.configByFormat[currentFormat]) || {championBonus:6, subcampeonBonus:3};
+    ui.championBonusDraft = cfg.championBonus;
+    ui.subcampeonBonusDraft = cfg.subcampeonBonus;
+    ui.settingsError = "";
+    ui.settingsOpen = true; render();
+  };
+  window.__closeSettings = function(){ ui.settingsOpen = false; render(); };
+  window.__updateBonusDraft = function(field, val){ ui[field] = val; };
+  window.__submitSettings = function(ev){
+    ev.preventDefault();
+    var champ = Number(ui.championBonusDraft), sub = Number(ui.subcampeonBonusDraft);
+    if(isNaN(champ) || isNaN(sub) || champ<0 || sub<0){
+      ui.settingsError = "Ingresá números válidos (0 o más)."; render(); return false;
+    }
+    ui.settingsOpen = false;
+    var fmt = currentFormat;
+    runWrite(function(){
+      return supabase.from("format_config").upsert({ format_id: fmt, champion_bonus: champ, subcampeon_bonus: sub }).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+    return false;
+  };
+
+  document.addEventListener("click", function(e){
+    var el = e.target.closest("[data-action]");
+    if(!el) return;
+    var action = el.getAttribute("data-action");
+    if(action==="open-create") window.__openCreateForm();
+    else if(action==="open-settings") window.__openSettings();
+    else if(action==="edit-tournament"){ e.preventDefault(); window.__editTournamentAction(el.getAttribute("data-id")); }
+    else if(action==="delete-tournament"){ e.preventDefault(); window.__deleteTournamentAction(el.getAttribute("data-id")); }
+    else if(action==="clear-examples") window.__clearExamples();
+    else if(action==="edit-photo"){ e.preventDefault(); window.__editPhotoAction(el.getAttribute("data-player")); }
+    else if(action==="backdrop" && e.target===el) window.__closeModal();
+    else if(action==="backdrop-settings" && e.target===el) window.__closeSettings();
+    else if(action==="backdrop-photo" && e.target===el) window.__closePhoto();
+    else if(action==="backdrop-confirm" && e.target===el) window.__confirmNo();
+    else if(action==="open-login") window.__openLogin();
+    else if(action==="logout") window.__logout();
+    else if(action==="backdrop-login" && e.target===el) window.__closeLogin();
+    else if(action==="open-accounts") window.__openAccounts();
+    else if(action==="backdrop-accounts" && e.target===el) window.__closeAccounts();
+    else if(action==="open-upcoming") window.__openUpcoming();
+    else if(action==="backdrop-upcoming" && e.target===el) window.__closeUpcoming();
+    else if(action==="open-decklist-edit") window.__openDecklistEdit(el.getAttribute("data-tid"), el.getAttribute("data-name"));
+    else if(action==="close-decklist-edit") window.__closeDecklistEdit();
+    else if(action==="open-gallery") window.__openGallery(el.getAttribute("data-tid"));
+    else if(action==="close-gallery") window.__closeGallery();
+    else if(action==="backdrop-gallery" && e.target===el) window.__closeGallery();
+    else if(action==="view-photo") window.__viewPhoto(parseInt(el.getAttribute("data-idx"),10));
+    else if(action==="close-photo-view") window.__closePhotoView();
+    else if(action==="delete-photo") window.__deletePhoto(el.getAttribute("data-id"), el.getAttribute("data-path"));
+  });
+  window.addEventListener("hashchange", render);
+
+  function boot(){
+    if(!location.hash) location.hash = "#"+FORMAT_TABS[0].slug+"/general";
+    render();
+    refreshState().then(function(){
+      ui.booting = false;
+      render();
+      return refreshAuthState();
+    }).then(function(isAdmin){
+      writable = isAdmin;
+      render();
+    }).catch(function(err){
+      ui.booting = false;
+      ui.bootError = "No se pudo conectar con la base de datos: "+(err && err.message ? err.message : "error desconocido");
+      render();
+    });
+    supabase.auth.onAuthStateChange(function(){
+      refreshAuthState().then(function(isAdmin){
+        writable = isAdmin;
+        render();
+      });
+    });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>
