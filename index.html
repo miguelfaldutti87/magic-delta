@@ -193,6 +193,7 @@
   .settings-hint{font-size:12.5px;color:var(--text-dim);margin:-8px 0 16px;}
   footer.credit{margin-top:48px;padding-top:18px;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim);text-align:center;}
 
+  .deck-hover{cursor:help;text-decoration:underline dotted var(--text-dim);text-underline-offset:3px;}
   .group-stack{display:flex;flex-direction:column;gap:20px;}
   .group-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;}
   .group-body{border-top:1px solid var(--border);padding:6px 18px 14px;}
@@ -247,7 +248,10 @@
     {slug:"commander", label:"Commander"},
     {slug:"draft", label:"Draft"}
   ];
+  var LIGA_SLUG = "commander-liga";
+  var FORMAT_OPTIONS = FORMAT_TABS.concat([{slug:LIGA_SLUG, label:"Commander Liga"}]);
   var currentFormat = FORMAT_TABS[0].slug;
+  var currentView = "general";
   function formatTab(slug){
     for(var i=0;i<FORMAT_TABS.length;i++){ if(FORMAT_TABS[i].slug===slug) return FORMAT_TABS[i]; }
     return FORMAT_TABS[0];
@@ -391,8 +395,10 @@
     else if(rest.indexOf("jugador/")===0) route = { view:"jugador", name: decodeURIComponent(rest.slice(8)) };
     else if(rest==="torneos") route = { view:"torneos" };
     else if(rest==="mazos") route = { view:"mazos" };
+    else if(rest==="liga") route = { view:"liga" };
     else route = { view:"general" };
     if(fmt==="draft" && route.view==="mazos") route = { view:"general" };
+    if(fmt!=="commander" && route.view==="liga") route = { view:"general" };
     route.format = fmt;
     return route;
   }
@@ -425,11 +431,16 @@
       return '<a class="format-tab'+(f.slug===route.format?' active':'')+'" href="#'+f.slug+'">'+f.label+'</a>';
     }).join("");
     var tabs = [
-      {v:"general", href:fmtPath("general"), label:"Tabla General"},
-      {v:"torneos", href:fmtPath("torneos"), label:torneosLabel()}
+      {v:"general", href:fmtPath("general"), label:"Tabla General"}
     ];
+    if(currentFormat==="commander") tabs.push({v:"liga", href:fmtPath("liga"), label:"Tabla Liga"});
+    tabs.push({v:"torneos", href:fmtPath("torneos"), label:torneosLabel()});
     if(currentFormat!=="draft") tabs.push({v:"mazos", href:fmtPath("mazos"), label:"Mazos"});
     var activeView = route.view==="torneo" ? "torneos" : (route.view==="jugador" ? "general" : route.view);
+    if(route.view==="torneo"){
+      var openT = (STATE.tournaments||[]).find(function(x){return x.id===route.id;});
+      if(openT && openT.format===LIGA_SLUG) activeView = "liga";
+    }
     var tabsHtml = tabs.map(function(t){
       return '<a class="tab'+(t.v===activeView?' active':'')+'" href="'+t.href+'">'+t.label+'</a>';
     }).join("");
@@ -491,8 +502,10 @@
     return stats + '<section><div class="section-head"><h2>Resumen de resultados</h2></div>'+tableHtml+'</section>';
   }
 
-  function renderGeneral(state){
+  function renderGeneral(state, variant){
     if(currentFormat==="draft") return renderDraftSummary(state);
+    var isLiga = variant==="liga";
+    var casual = currentFormat==="commander" && !isLiga;
     var table = generalTable(state);
     var leader = table[0];
     var sorted = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
@@ -501,7 +514,7 @@
     var topDeck = decks.rows[0];
 
     var deckTile;
-    if(currentFormat==="commander"){
+    if(casual){
       var winCounts = {};
       state.tournaments.forEach(function(t){
         var w = tournamentWinner(t);
@@ -518,9 +531,17 @@
 
     var stats = '<div class="stat-grid">'+
       '<div class="stat-tile"><div class="stat-label">Líder actual</div><div class="stat-value">'+(leader?escapeHtml(leader.player):"—")+'</div><div class="stat-sub">'+(leader?leader.points+" pts":"Sin fechas cargadas")+'</div></div>'+
-      (currentFormat==="commander" ? (function(){
-        var days = groupTournamentsByDay(state.tournaments).length;
-        return '<div class="stat-tile"><div class="stat-label">Fechas jugadas</div><div class="stat-value">'+days+'</div><div class="stat-sub">'+state.tournaments.length+' partida'+(state.tournaments.length===1?"":"s")+(latest?" · Última: "+fmtDate(latest.date):"")+'</div></div>';
+      (casual ? (function(){
+        var wins = {};
+        state.tournaments.forEach(function(t){
+          var w = tournamentWinner(t);
+          if(w) wins[w.player] = (wins[w.player]||0)+1;
+        });
+        var top = null;
+        Object.keys(wins).sort().forEach(function(name){
+          if(!top || wins[name]>top.count) top = {player:name, count:wins[name]};
+        });
+        return '<div class="stat-tile"><div class="stat-label">Más ganador</div><div class="stat-value">'+(top?escapeHtml(top.player):"—")+'</div><div class="stat-sub">'+(top?top.count+" victoria"+(top.count===1?"":"s"):"Sin partidas cargadas")+'</div></div>';
       })() :
       '<div class="stat-tile"><div class="stat-label">Fechas jugadas</div><div class="stat-value">'+state.tournaments.length+'</div><div class="stat-sub">'+(latest?"Última: "+fmtDate(latest.date):"—")+'</div></div>')+
       deckTile+
@@ -542,9 +563,15 @@
       '<div class="table-wrap"><table><thead><tr>'+
       '<th>#</th><th>Jugador</th><th>Puntos</th><th>Fechas</th><th>Campeonatos</th><th>Top 4</th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>'
-    ) : '<div class="card empty-state">Todavía no hay fechas cargadas. Usá "+ Nueva fecha" para empezar.</div>';
+    ) : '<div class="card empty-state">'+(isLiga? 'Todavía no hay partidas de la liga. Cargalas con "+ Nueva fecha" eligiendo el formato "Commander Liga".' : 'Todavía no hay fechas cargadas. Usá "+ Nueva fecha" para empezar.')+'</div>';
 
-    return stats + '<section><div class="section-head"><h2>Tabla general</h2></div>'+tableHtml+'</section>';
+    var ligaGames = "";
+    if(isLiga && sorted.length){
+      ligaGames = '<section style="margin-top:26px"><h2>Partidas de la liga</h2><div class="tourn-grid">'+
+        sorted.map(function(t){ return tournamentCard(state,t); }).join("")+'</div></section>';
+    }
+
+    return stats + '<section><div class="section-head"><h2>'+(isLiga?"Tabla liga":"Tabla general")+'</h2></div>'+tableHtml+'</section>'+ligaGames;
   }
 
   function tournamentCard(state, t){
@@ -597,7 +624,7 @@
       var open = ui.groupOpen[g.key]===undefined ? idx===0 : ui.groupOpen[g.key];
       var head = '<div class="group-head" data-action="toggle-group" data-key="'+escapeHtml(g.key)+'" data-open="'+(open?"1":"0")+'">'+
         '<div><div class="tourn-date">'+fmtDate(g.date)+'</div><div class="tourn-name">'+escapeHtml(g.name)+'</div></div>'+
-        '<div style="display:flex;align-items:center;gap:10px"><span class="pill">'+g.games.length+' partida'+(g.games.length===1?"":"s")+'</span><span style="color:var(--text-dim)">'+(open?"▾":"▸")+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:10px"><button type="button" class="btn btn-ghost btn-sm" data-action="open-gallery" data-key="'+escapeHtml(g.key)+'">Fotos y videos</button><span class="pill">'+g.games.length+' partida'+(g.games.length===1?"":"s")+'</span><span style="color:var(--text-dim)">'+(open?"▾":"▸")+'</span></div>'+
       '</div>';
       var body = "";
       if(open){
@@ -688,7 +715,10 @@
       '</div>'
     ) : "";
 
-    return '<a class="back-link" href="'+fmtPath("torneos")+'">← Volver a '+torneosLabel().toLowerCase()+'</a>'+
+    var backLinkHtml = t.format===LIGA_SLUG
+      ? '<a class="back-link" href="'+fmtPath("liga")+'">← Volver a la tabla liga</a>'
+      : '<a class="back-link" href="'+fmtPath("torneos")+'">← Volver a '+torneosLabel().toLowerCase()+'</a>';
+    return backLinkHtml+
       '<div class="detail-head"><div class="detail-title"><h2>'+escapeHtml(t.name||"Fecha")+(t.example?' <span class="example-flag">(ejemplo)</span>':'')+'</h2>'+
       '<div class="detail-meta"><span>'+fmtDate(t.date)+'</span></div></div>'+
       (writable? '<div style="display:flex;gap:8px;"><button class="btn" data-action="edit-tournament" data-id="'+escapeHtml(t.id)+'">Editar</button><button class="btn btn-danger" data-action="delete-tournament" data-id="'+escapeHtml(t.id)+'">Eliminar</button></div>':'')+
@@ -784,8 +814,13 @@
     var options = '<option value="">Todas las fechas</option>'+state.tournaments.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(t){
       return '<option value="'+escapeHtml(t.id)+'" '+(filter===t.id?"selected":"")+'>'+escapeHtml(t.name||"Fecha")+' · '+fmtDate(t.date)+'</option>';
     }).join("");
+    var hoverable = currentFormat==="commander";
+    if(hoverable) prefetchDeckCards(dstats.rows.map(function(r){ return r.deck; }));
     var rows = dstats.rows.map(function(r){
-      return '<tr><td>'+escapeHtml(r.deck)+'</td><td class="num">'+r.count+'</td>'+
+      var deckCell = hoverable
+        ? '<td><span class="deck-hover" data-name="'+escapeHtml(r.deck)+'" onmouseover="window.__deckHover(this,event)" onmousemove="window.__deckMove(event)" onmouseout="window.__deckLeave()">'+escapeHtml(r.deck)+'</span></td>'
+        : '<td>'+escapeHtml(r.deck)+'</td>';
+      return '<tr>'+deckCell+'<td class="num">'+r.count+'</td>'+
         '<td class="num">'+r.pct.toFixed(1)+'%</td>'+
         '<td class="wrap">'+r.players.map(function(p){return '<a href="'+fmtPath("jugador/"+encodeURIComponent(p))+'">'+escapeHtml(p)+'</a>';}).join(", ")+'</td></tr>';
     }).join("");
@@ -921,7 +956,7 @@
       '<div class="form-grid">'+
         '<div class="field"><label>Fecha</label><input type="date" required value="'+escapeHtml(d.date)+'" oninput="window.__updateMeta(\'date\',this.value)"></div>'+
         '<div class="field"><label>Nombre</label><input type="text" placeholder="Fecha '+(state.tournaments.length+1)+'" value="'+escapeHtml(d.name)+'" oninput="window.__updateMeta(\'name\',this.value)"></div>'+
-        '<div class="field"><label>Formato</label><select class="select-filter" onchange="window.__updateMeta(\'format\',this.value)">'+FORMAT_TABS.map(function(f){return '<option value="'+f.slug+'" '+(f.slug===d.format?"selected":"")+'>'+escapeHtml(f.label)+'</option>';}).join("")+'</select></div>'+
+        '<div class="field"><label>Formato</label><select class="select-filter" onchange="window.__updateMeta(\'format\',this.value)">'+FORMAT_OPTIONS.map(function(f){return '<option value="'+f.slug+'" '+(f.slug===d.format?"selected":"")+'>'+escapeHtml(f.label)+'</option>';}).join("")+'</select></div>'+
       '</div>'+
       '<div class="rows-head"><span></span><span>Jugador</span><span>Mazo</span><span>Puntos</span><span></span></div>'+
       '<div id="rows-container">'+rowsHtml+'</div>'+
@@ -1023,7 +1058,10 @@
         return '<div class="card" style="padding:12px 14px;margin-bottom:10px">'+
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">'+
             '<strong>'+escapeHtml(p.name)+'</strong>'+
-            (p.hasAccess? '<span class="pill">Con acceso</span>' : '<span class="pill" style="opacity:.6">Sin acceso</span>')+
+            '<span style="display:flex;align-items:center;gap:8px">'+
+              (p.hasAccess? '<span class="pill">Con acceso</span>' : '<span class="pill" style="opacity:.6">Sin acceso</span>')+
+              ((currentUser && p.userId===currentUser.id) ? '' : '<button type="button" class="btn btn-ghost btn-sm btn-danger" data-action="delete-player" data-id="'+escapeHtml(p.id)+'" data-name="'+escapeHtml(p.name)+'" title="Eliminar jugador">Eliminar</button>')+
+            '</span>'+
           '</div>'+
           '<form onsubmit="return window.__submitPlayerAccess(\''+p.id+'\',event)" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">'+
             '<div class="field" style="flex:1 1 160px"><label>Email</label><input type="email" required value="'+escapeHtml(f.email)+'" oninput="window.__updatePlayerForm(\''+p.id+'\',\'email\',this.value)"></div>'+
@@ -1046,6 +1084,7 @@
           '<span style="font-size:12px">Copiá estos datos y pasáselos por fuera de esta página.</span>'+
         '</div>'
       ) : '')+
+      (a.deleteMsg? '<div class="field-error" style="margin:0 0 10px">'+escapeHtml(a.deleteMsg)+'</div>':'')+
       '<div class="settings-hint">Jugadores:</div>'+
       rows;
     }
@@ -1103,9 +1142,9 @@
     var g = ui.gallery;
     if(!g || !g.open) return "";
     var uploadSection = writable ? (
-      '<div class="field full" style="margin-bottom:16px"><label>Subir imágenes</label>'+
-      '<input type="file" accept="image/*" multiple onchange="window.__handleGalleryUpload(this)" '+(g.uploading?"disabled":"")+'>'+
-      (g.uploading? '<div class="settings-hint">Subiendo…</div>':'')+
+      '<div class="field full" style="margin-bottom:16px"><label>Subir fotos o videos (hasta 50 MB cada uno)</label>'+
+      '<input type="file" accept="image/*,video/*" multiple onchange="window.__handleGalleryUpload(this)" '+(g.uploading?"disabled":"")+'>'+
+      (g.uploading? '<div class="settings-hint">Subiendo… (los videos pueden tardar)</div>':'')+
       '</div>'
     ) : "";
     var body;
@@ -1114,24 +1153,32 @@
     } else if(g.viewIndex!=null && g.photos[g.viewIndex]){
       var p = g.photos[g.viewIndex];
       body = '<div style="text-align:center">'+
-        '<img src="'+escapeHtml(p.url)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:12px">'+
+        (p.type==="video"
+          ? '<video src="'+escapeHtml(p.url)+'" controls playsinline style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:12px;background:#000"></video>'
+          : '<img src="'+escapeHtml(p.url)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:12px">')+
         '<div class="modal-actions" style="justify-content:center">'+
           '<button type="button" class="btn btn-sm" data-action="close-photo-view">← Volver a la galería</button>'+
           (writable? '<button type="button" class="btn btn-sm btn-danger" data-action="delete-photo" data-id="'+p.id+'" data-path="'+escapeHtml(p.path)+'">Eliminar</button>':'')+
         '</div>'+
       '</div>';
     } else if(!g.photos.length){
-      body = '<div class="card empty-state">Todavía no hay fotos de esta fecha.</div>';
+      body = '<div class="card empty-state">Todavía no hay fotos ni videos de esta fecha.</div>';
     } else {
       body = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px">'+
         g.photos.map(function(p,i){
+          if(p.type==="video"){
+            return '<div style="position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:1px solid var(--border);height:110px;background:#000" data-action="view-photo" data-idx="'+i+'">'+
+              '<video src="'+escapeHtml(p.url)+'#t=0.1" preload="metadata" muted playsinline style="width:100%;height:100%;object-fit:cover;pointer-events:none"></video>'+
+              '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:30px;text-shadow:0 1px 6px rgba(0,0,0,.7);pointer-events:none">▶</span>'+
+            '</div>';
+          }
           return '<img src="'+escapeHtml(p.url)+'" style="width:100%;height:110px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid var(--border)" data-action="view-photo" data-idx="'+i+'">';
         }).join("")+
       '</div>';
     }
     return '<div class="modal-backdrop" data-action="backdrop-gallery">'+
       '<div class="modal" role="dialog" aria-modal="true" style="max-width:640px">'+
-      '<h3>Galería de imágenes</h3>'+
+      '<h3>'+(g.key? "Fotos y videos de la fecha" : "Galería de imágenes")+'</h3>'+
       uploadSection+
       (g.error? '<div class="field-error">'+escapeHtml(g.error)+'</div>':'')+
       body+
@@ -1159,9 +1206,13 @@
   }
 
   function renderApp(state, route){
+    var scopeSlug = route.view==="liga" ? LIGA_SLUG : route.format;
+    var scopedTournaments = tournamentsForFormat(state, scopeSlug);
+    if(route.view==="torneo" && route.format==="commander") scopedTournaments = scopedTournaments.concat(tournamentsForFormat(state, LIGA_SLUG));
     var scoped = Object.assign({}, state, {
-      tournaments: tournamentsForFormat(state, route.format),
-      events: eventsForFormat(state, route.format)
+      tournaments: scopedTournaments,
+      events: eventsForFormat(state, route.format),
+      config: (state.configByFormat && state.configByFormat[scopeSlug]) || {championBonus:6, subcampeonBonus:3}
     });
     var main;
     if(route.view==="torneos") main = renderTorneos(scoped);
@@ -1169,6 +1220,7 @@
     else if(route.view==="jugador") main = renderJugadorDetail(scoped, route.name);
     else if(route.view==="mazos") main = renderMazos(scoped);
     else if(route.view==="decklist") main = renderDecklistPage(scoped, route);
+    else if(route.view==="liga") main = renderGeneral(scoped, "liga");
     else main = renderGeneral(scoped);
 
     return renderTopbar(route)+
@@ -1181,6 +1233,9 @@
   function render(){
     var route = parseRoute();
     currentFormat = route.format;
+    currentView = route.view;
+    var hoverBoxEl = document.getElementById("deck-hover-preview");
+    if(hoverBoxEl) hoverBoxEl.style.display = "none";
     if(ui.booting){
       document.getElementById("app").innerHTML = '<div style="padding:80px 20px;text-align:center;color:var(--text-dim)">Cargando…</div>';
       return;
@@ -1202,6 +1257,7 @@
   var SUPABASE_KEY = "sb_publishable_XQWiir6tIrddFm3wrxyM4w_jRvmiJtn";
   var CREATE_LOGIN_FN_URL = SUPABASE_URL + "/functions/v1/create-player-login";
   var SEND_UPDATE_EMAIL_FN_URL = SUPABASE_URL + "/functions/v1/send-update-email";
+  var DELETE_PLAYER_FN_URL = SUPABASE_URL + "/functions/v1/delete-player";
   var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   function showToast(msg){
@@ -1347,6 +1403,70 @@
     });
   }
 
+  var deckCardCache = {};
+  var deckCardPending = {};
+  var hoverName = "";
+
+  function prefetchDeckCards(names){
+    var need = names.filter(function(n){
+      var k = (n||"").toLowerCase();
+      return k && deckCardCache[k]===undefined && !deckCardPending[k];
+    });
+    if(!need.length) return Promise.resolve();
+    need.forEach(function(n){ deckCardPending[n.toLowerCase()] = true; });
+    return resolveCards(need).then(function(byKey){
+      need.forEach(function(n){
+        var k = n.toLowerCase(), c = byKey[k];
+        deckCardCache[k] = (c && c.image_url) ? { name:c.name, image_url:c.image_url } : null;
+        delete deckCardPending[k];
+      });
+    }).catch(function(){
+      need.forEach(function(n){ delete deckCardPending[n.toLowerCase()]; });
+    });
+  }
+
+  function deckHoverBox(){
+    var b = document.getElementById("deck-hover-preview");
+    if(!b){
+      b = document.createElement("div");
+      b.id = "deck-hover-preview";
+      b.style.cssText = "position:fixed;z-index:300;width:240px;pointer-events:none;display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px;";
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+  function paintDeckHover(name){
+    var b = deckHoverBox();
+    var c = deckCardCache[name.toLowerCase()];
+    if(c===undefined) b.innerHTML = '<div style="padding:24px 8px;text-align:center;color:var(--text-dim);font-size:12.5px">Cargando…</div>';
+    else if(c===null) b.innerHTML = '<div style="padding:24px 8px;text-align:center;color:var(--text-dim);font-size:12.5px">Sin imagen disponible<br>'+escapeHtml(name)+'</div>';
+    else b.innerHTML = '<img src="'+escapeHtml(c.image_url)+'" alt="" style="width:100%;border-radius:8px;display:block">';
+  }
+  window.__deckHover = function(el, ev){
+    var name = el.getAttribute("data-name")||"";
+    hoverName = name;
+    deckHoverBox().style.display = "block";
+    paintDeckHover(name);
+    window.__deckMove(ev);
+    if(deckCardCache[name.toLowerCase()]===undefined){
+      prefetchDeckCards([name]).then(function(){ if(hoverName===name) paintDeckHover(name); });
+    }
+  };
+  window.__deckMove = function(ev){
+    var b = deckHoverBox();
+    var w = 256, h = b.offsetHeight || 340;
+    var x = ev.clientX + 18, y = ev.clientY - 30;
+    if(x + w > window.innerWidth - 8) x = ev.clientX - w - 18;
+    if(y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+    if(y < 8) y = 8;
+    b.style.left = x+"px"; b.style.top = y+"px";
+  };
+  window.__deckLeave = function(){
+    hoverName = "";
+    var b = document.getElementById("deck-hover-preview");
+    if(b) b.style.display = "none";
+  };
+
   var decklistView = null;
 
   function loadDecklistView(tid, playerName){
@@ -1448,7 +1568,7 @@
 
   window.__openCreateForm = function(){
     ui.modalMode = "create"; ui.editingId = null; ui.formError = "";
-    ui.draft = { date:"", name:"", format:currentFormat, rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"" };
+    ui.draft = { date:"", name:"", format:(currentView==="liga"?LIGA_SLUG:currentFormat), rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"" };
     ui.modalOpen = true; render();
   };
   window.__openEditForm = function(id){
@@ -1745,6 +1865,27 @@
     return false;
   };
 
+  window.__deletePlayer = function(playerId, name){
+    window.__askConfirm('¿Eliminar a "'+name+'"? Se borra también su acceso, su decklist cargada y sus inscripciones. No se puede deshacer.', function(){
+      ui.accounts.deleteMsg = "";
+      supabase.auth.getSession().then(function(sessionRes){
+        var token = sessionRes.data.session ? sessionRes.data.session.access_token : "";
+        return fetch(DELETE_PLAYER_FN_URL, {
+          method: "POST",
+          headers: { "Content-Type":"application/json", "Authorization":"Bearer "+token },
+          body: JSON.stringify({ playerId: playerId })
+        });
+      }).then(function(r){
+        return r.json().then(function(body){ return {ok:r.ok, body:body}; });
+      }).then(function(res){
+        if(!res.ok){ ui.accounts.deleteMsg = res.body.error || "No se pudo eliminar."; render(); return; }
+        return refreshState().then(function(){ render(); });
+      }).catch(function(err){
+        ui.accounts.deleteMsg = "Error: "+(err && err.message ? err.message : err); render();
+      });
+    }, "Eliminar");
+  };
+
   window.__toggleGroup = function(key, wasOpen){ ui.groupOpen[key] = !wasOpen; render(); };
   window.__addGameToDay = function(date, name){
     window.__openCreateForm();
@@ -1826,14 +1967,17 @@
     });
   };
 
-  window.__openGallery = function(tid){
-    ui.gallery = { open:true, tid:tid, photos:[], loading:true, error:"", uploading:false, viewIndex:null };
+  window.__openGallery = function(tid, key){
+    tid = tid || null; key = key || null;
+    ui.gallery = { open:true, tid:tid, key:key, photos:[], loading:true, error:"", uploading:false, viewIndex:null };
     render();
-    supabase.from("tournament_photos").select("id,storage_path,uploaded_at").eq("tournament_id",tid).order("uploaded_at",{ascending:true}).then(function(res){
+    var q = supabase.from("tournament_photos").select("id,storage_path,uploaded_at,media_type");
+    q = key ? q.eq("group_key", key) : q.eq("tournament_id", tid);
+    q.order("uploaded_at",{ascending:true}).then(function(res){
       if(res.error) throw res.error;
       ui.gallery.photos = (res.data||[]).map(function(p){
         var pub = supabase.storage.from("tournament-photos").getPublicUrl(p.storage_path);
-        return { id:p.id, path:p.storage_path, url: pub.data.publicUrl };
+        return { id:p.id, path:p.storage_path, url: pub.data.publicUrl, type: p.media_type||"image" };
       });
       ui.gallery.loading = false; render();
     }).catch(function(err){
@@ -1848,21 +1992,30 @@
   window.__handleGalleryUpload = function(inputEl){
     var files = inputEl.files;
     if(!files || !files.length) return;
-    var tid = ui.gallery.tid;
+    var tid = ui.gallery.tid, key = ui.gallery.key;
+    var MAX_BYTES = 50*1024*1024;
+    var tooBig = Array.from(files).filter(function(f){ return f.size > MAX_BYTES; });
+    if(tooBig.length){
+      ui.gallery.error = "Estos archivos superan los 50 MB y no se pueden subir: "+tooBig.map(function(f){ return f.name; }).join(", ");
+      inputEl.value = ""; render(); return;
+    }
     ui.gallery.uploading = true; ui.gallery.error = ""; render();
+    var folder = key ? "day-"+key.split("|")[0] : tid;
     var uploads = Array.from(files).map(function(file){
       var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
-      var path = tid+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"-"+safeName;
+      var path = folder+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,8)+"-"+safeName;
+      var mediaType = (file.type||"").indexOf("video")===0 ? "video" : "image";
       return supabase.storage.from("tournament-photos").upload(path, file).then(function(res){
         if(res.error) throw res.error;
-        return supabase.from("tournament_photos").insert({tournament_id:tid, storage_path:path});
+        var row = key ? {group_key:key, storage_path:path, media_type:mediaType} : {tournament_id:tid, storage_path:path, media_type:mediaType};
+        return supabase.from("tournament_photos").insert(row);
       });
     });
     Promise.all(uploads).then(function(results){
       results.forEach(function(res){ if(res && res.error) throw res.error; });
       inputEl.value = "";
       ui.gallery.uploading = false;
-      window.__openGallery(tid);
+      window.__openGallery(tid, key);
     }).catch(function(err){
       ui.gallery.uploading = false;
       ui.gallery.error = "No se pudo subir: "+(err && err.message ? err.message : err);
@@ -1870,14 +2023,14 @@
     });
   };
   window.__deletePhoto = function(id, path){
-    window.__askConfirm("¿Eliminar esta foto? No se puede deshacer.", function(){
-      var tid = ui.gallery.tid;
+    window.__askConfirm("¿Eliminar este archivo? No se puede deshacer.", function(){
+      var tid = ui.gallery.tid, key = ui.gallery.key;
       ui.gallery.loading = true; ui.gallery.viewIndex = null; render();
       supabase.storage.from("tournament-photos").remove([path]).then(function(){
         return supabase.from("tournament_photos").delete().eq("id", id);
       }).then(function(res){
         if(res && res.error) throw res.error;
-        window.__openGallery(tid);
+        window.__openGallery(tid, key);
       }).catch(function(err){
         ui.gallery.loading = false;
         ui.gallery.error = err && err.message ? err.message : String(err);
@@ -1944,7 +2097,8 @@
     else if(action==="backdrop-upcoming" && e.target===el) window.__closeUpcoming();
     else if(action==="open-decklist-edit") window.__openDecklistEdit(el.getAttribute("data-tid"), el.getAttribute("data-name"));
     else if(action==="close-decklist-edit") window.__closeDecklistEdit();
-    else if(action==="open-gallery") window.__openGallery(el.getAttribute("data-tid"));
+    else if(action==="open-gallery") window.__openGallery(el.getAttribute("data-tid"), el.getAttribute("data-key"));
+    else if(action==="delete-player") window.__deletePlayer(el.getAttribute("data-id"), el.getAttribute("data-name"));
     else if(action==="close-gallery") window.__closeGallery();
     else if(action==="backdrop-gallery" && e.target===el) window.__closeGallery();
     else if(action==="toggle-group") window.__toggleGroup(el.getAttribute("data-key"), el.getAttribute("data-open")==="1");
