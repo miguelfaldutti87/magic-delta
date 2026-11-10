@@ -97,6 +97,9 @@
   .stat-tile::before,.card::before,.tourn-card::before,.champ-hero::before{content:"";position:absolute;top:-7px;left:-7px;width:14px;height:14px;background:center/contain no-repeat var(--sparkle);pointer-events:none;}
   .stat-tile::after,.card::after,.tourn-card::after,.champ-hero::after{content:"";position:absolute;bottom:-7px;right:-7px;width:14px;height:14px;background:center/contain no-repeat var(--sparkle);pointer-events:none;}
   .stat-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+  .stat-tile-champ{display:flex;align-items:center;gap:14px;border-color:var(--accent);}
+  .tile-photo{width:64px;height:64px;border-radius:50%;object-fit:cover;object-position:top;flex:none;border:2px solid var(--accent);}
+  .tile-avatar{display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Cinzel",serif;font-size:22px;font-weight:600;}
   .stat-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);margin-bottom:6px;}
   .stat-value{font-family:"Cinzel",serif;font-size:22px;font-weight:600;}
   .stat-sub{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
@@ -126,6 +129,16 @@
 
   .pill{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:3px 9px;border-radius:100px;background:var(--surface-3);color:var(--text-dim);}
 
+  .season-pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;align-items:center;}
+  .season-pill{cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:100px;padding:6px 14px;font-size:13px;font-weight:500;font-family:inherit;}
+  .season-pill:hover{color:var(--text);}
+  .season-pill.active{background:var(--accent);border-color:var(--accent);color:#1a1205;}
+  .season-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:100px;background:var(--surface-3);color:var(--text-dim);}
+  .season-badge.done{color:#7bd88f;}
+  .season-block{margin-bottom:28px;}
+  .season-block h3{display:flex;align-items:center;gap:10px;margin:0 0 12px;flex-wrap:wrap;}
+  .season-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .season-row:last-child{border-bottom:0;}
   .tourn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
   .tourn-card{position:relative;padding:16px 18px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--text);}
   .tourn-card:hover{border-color:var(--text-dim);}
@@ -250,6 +263,14 @@
   ];
   var LIGA_SLUG = "commander-liga";
   var FORMAT_OPTIONS = FORMAT_TABS.concat([{slug:LIGA_SLUG, label:"Commander Liga"}]);
+  var SEASON_FORMATS = ["pauper"];
+  function seasonsEnabled(slug){ return SEASON_FORMATS.indexOf(slug)>-1; }
+  function seasonsFor(state, slug){ return (state.seasons||[]).filter(function(s){ return s.format===slug; }); }
+  function seasonLabel(s){ return "Season "+s.number+(s.name && s.name.trim() && s.name.trim()!=="Season "+s.number ? " · "+s.name.trim() : ""); }
+  function openSeasonFor(state, slug){
+    var open = seasonsFor(state, slug).filter(function(s){ return !s.completed; });
+    return open.length ? open[open.length-1] : null;
+  }
   var currentFormat = FORMAT_TABS[0].slug;
   var currentView = "general";
   function formatTab(slug){
@@ -278,7 +299,8 @@
     decklistEdit:null,
     gallery:{ open:false, tid:null, photos:[], loading:false, error:"", uploading:false, viewIndex:null },
     updateEmail:{ open:false, subject:"", message:"", sending:false, error:"", success:null },
-    groupOpen:{}
+    groupOpen:{},
+    seasonSel:"all", seasonsOpen:false, seasonNewName:"", seasonsError:""
   };
 
   function escapeHtml(s){
@@ -333,21 +355,24 @@
       var champ = (t.champion||"").trim();
       var sub = (t.subcampeon||"").trim();
       var top4Set = new Set(top4Members(t));
+      var dayWinner = tournamentWinner(t);
       t.standings.forEach(function(s){
         var key = (s.player||"").trim();
         if(!key) return;
-        if(!map.has(key)) map.set(key,{player:key,points:0,played:0,championships:0,top4:0});
+        if(!map.has(key)) map.set(key,{player:key,points:0,played:0,championships:0,top4:0,wins:0});
         var rec = map.get(key);
         var pts = Number(s.points)||0;
         if(champ && key===champ) pts += championBonus;
         if(sub && key===sub) pts += subcampeonBonus;
         rec.points += pts; rec.played += 1;
         if(champ && key===champ) rec.championships += 1;
+        if(dayWinner && dayWinner.player===key) rec.wins += 1;
         if(top4Set.has(key)) rec.top4 += 1;
       });
     });
+    // Desempate: más puntos, luego más fechas ganadas, luego campeonatos, luego Top 4.
     return Array.from(map.values()).sort(function(a,b){
-      return b.points-a.points || b.championships-a.championships || b.top4-a.top4 || a.player.localeCompare(b.player);
+      return b.points-a.points || b.wins-a.wins || b.championships-a.championships || b.top4-a.top4 || a.player.localeCompare(b.player);
     });
   }
 
@@ -506,6 +531,24 @@
     if(currentFormat==="draft") return renderDraftSummary(state);
     var isLiga = variant==="liga";
     var casual = currentFormat==="commander" && !isLiga;
+    var seasonBar = "", seasonHead = "", seasonTitle = "", seasonDone = false;
+    if(seasonsEnabled(currentFormat) && !isLiga){
+      var seasonList = seasonsFor(state, currentFormat);
+      var selSeason = seasonList.find(function(s){ return s.id===ui.seasonSel; }) || null;
+      if(selSeason) state = Object.assign({}, state, {tournaments: state.tournaments.filter(function(t){ return t.seasonId===selSeason.id; })});
+      if(seasonList.length || writable){
+        seasonBar = '<div class="season-pills">'+
+          '<button class="season-pill'+(!selSeason?' active':'')+'" data-action="select-season" data-id="all">Acumulado</button>'+
+          seasonList.map(function(s){
+            return '<button class="season-pill'+(selSeason&&selSeason.id===s.id?' active':'')+'" data-action="select-season" data-id="'+escapeHtml(s.id)+'">'+escapeHtml(seasonLabel(s))+(s.completed?' ✓':'')+'</button>';
+          }).join("")+
+          (writable? '<button class="btn btn-ghost btn-sm" data-action="open-seasons">Gestionar seasons</button>' : '')+
+        '</div>';
+      }
+      seasonDone = !!(selSeason && selSeason.completed);
+      if(selSeason) seasonTitle ="Tabla · "+seasonLabel(selSeason);
+      if(selSeason) seasonHead ='<span class="season-badge'+(selSeason.completed?' done':'')+'">'+(selSeason.completed?'Season completada':'Season en curso')+'</span>';
+    }
     var table = generalTable(state);
     var leader = table[0];
     var sorted = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
@@ -529,8 +572,18 @@
       deckTile = '<div class="stat-tile"><div class="stat-label">Mazo más jugado</div><div class="stat-value">'+(topDeck?escapeHtml(topDeck.deck):"—")+'</div><div class="stat-sub">'+(topDeck?topDeck.pct.toFixed(0)+"% de representación":"—")+'</div></div>';
     }
 
+    var leaderTile;
+    if(seasonDone && leader){
+      var lp = photoFor(state, leader.player);
+      leaderTile = '<div class="stat-tile stat-tile-champ">'+
+        (lp ? '<img class="tile-photo" src="'+escapeHtml(lp)+'" alt="Foto de '+escapeHtml(leader.player)+'">'
+            : '<div class="tile-photo tile-avatar" style="background:'+avatarColor(leader.player)+'">'+escapeHtml(initials(leader.player))+'</div>')+
+        '<div><div class="stat-label">Campeón</div><div class="stat-value">'+escapeHtml(leader.player)+'</div><div class="stat-sub">'+leader.points+' pts</div></div></div>';
+    } else {
+      leaderTile = '<div class="stat-tile"><div class="stat-label">'+(seasonDone?"Campeón":"Líder actual")+'</div><div class="stat-value">'+(leader?escapeHtml(leader.player):"—")+'</div><div class="stat-sub">'+(leader?leader.points+" pts":"Sin fechas cargadas")+'</div></div>';
+    }
     var stats = '<div class="stat-grid">'+
-      '<div class="stat-tile"><div class="stat-label">Líder actual</div><div class="stat-value">'+(leader?escapeHtml(leader.player):"—")+'</div><div class="stat-sub">'+(leader?leader.points+" pts":"Sin fechas cargadas")+'</div></div>'+
+      leaderTile+
       (casual ? (function(){
         var wins = {};
         state.tournaments.forEach(function(t){
@@ -571,7 +624,8 @@
         sorted.map(function(t){ return tournamentCard(state,t); }).join("")+'</div></section>';
     }
 
-    return stats + '<section><div class="section-head"><h2>'+(isLiga?"Tabla liga":"Tabla general")+'</h2></div>'+tableHtml+'</section>'+ligaGames;
+    var tableTitle = isLiga ? "Tabla liga" : (seasonTitle || "Tabla general");
+    return seasonBar + stats + '<section><div class="section-head"><h2>'+escapeHtml(tableTitle)+'</h2>'+seasonHead+'</div>'+tableHtml+'</section>'+ligaGames;
   }
 
   function tournamentCard(state, t){
@@ -658,9 +712,31 @@
       banner = '<div class="example-banner"><span>Estas fechas son de ejemplo para mostrar cómo se ve la liga.</span>'+
         '<button class="btn btn-sm" data-action="clear-examples">Quitar datos de ejemplo</button></div>';
     }
-    var grid = sorted.length ? '<div class="tourn-grid">'+sorted.map(function(t){return tournamentCard(state,t);}).join("")+'</div>'
-      : '<div class="card empty-state">Todavía no hay fechas cargadas.</div>';
-    return banner+'<section><div class="section-head"><h2>'+torneosLabel()+'</h2></div>'+grid+'</section>';
+    var grid;
+    if(seasonsEnabled(currentFormat)){
+      var seasonList = seasonsFor(state, currentFormat).slice().reverse();
+      var blocks = seasonList.map(function(s){
+        var list = sorted.filter(function(t){ return t.seasonId===s.id; });
+        return '<div class="season-block"><h3>'+escapeHtml(seasonLabel(s))+
+          ' <span class="season-badge'+(s.completed?' done':'')+'">'+(s.completed?'Completada':'En curso')+'</span>'+
+          '<span class="pill">'+list.length+' fecha'+(list.length===1?'':'s')+'</span></h3>'+
+          (list.length ? '<div class="tourn-grid">'+list.map(function(t){return tournamentCard(state,t);}).join("")+'</div>'
+            : '<div class="card empty-state">Esta season todavía no tiene fechas.</div>')+
+          '</div>';
+      });
+      var known = {}; seasonList.forEach(function(s){ known[s.id]=true; });
+      var orphans = sorted.filter(function(t){ return !known[t.seasonId]; });
+      if(orphans.length){
+        blocks.push('<div class="season-block"><h3>Sin season <span class="pill">'+orphans.length+' fecha'+(orphans.length===1?'':'s')+'</span></h3>'+
+          '<div class="tourn-grid">'+orphans.map(function(t){return tournamentCard(state,t);}).join("")+'</div></div>');
+      }
+      grid = blocks.length ? blocks.join("") : '<div class="card empty-state">Todavía no hay fechas cargadas.</div>';
+    } else {
+      grid = sorted.length ? '<div class="tourn-grid">'+sorted.map(function(t){return tournamentCard(state,t);}).join("")+'</div>'
+        : '<div class="card empty-state">Todavía no hay fechas cargadas.</div>';
+    }
+    var manageBtn = (writable && seasonsEnabled(currentFormat)) ? '<button class="btn btn-ghost btn-sm" data-action="open-seasons">Gestionar seasons</button>' : '';
+    return banner+'<section><div class="section-head"><h2>'+torneosLabel()+'</h2>'+manageBtn+'</div>'+grid+'</section>';
   }
 
   function renderTorneoDetail(state, id){
@@ -720,7 +796,10 @@
       : '<a class="back-link" href="'+fmtPath("torneos")+'">← Volver a '+torneosLabel().toLowerCase()+'</a>';
     return backLinkHtml+
       '<div class="detail-head"><div class="detail-title"><h2>'+escapeHtml(t.name||"Fecha")+(t.example?' <span class="example-flag">(ejemplo)</span>':'')+'</h2>'+
-      '<div class="detail-meta"><span>'+fmtDate(t.date)+'</span></div></div>'+
+      '<div class="detail-meta"><span>'+fmtDate(t.date)+'</span>'+(function(){
+        var s = (state.seasons||[]).find(function(x){ return x.id===t.seasonId; });
+        return s ? '<span class="season-badge'+(s.completed?' done':'')+'">'+escapeHtml(seasonLabel(s))+'</span>' : '';
+      })()+'</div></div>'+
       (writable? '<div style="display:flex;gap:8px;"><button class="btn" data-action="edit-tournament" data-id="'+escapeHtml(t.id)+'">Editar</button><button class="btn btn-danger" data-action="delete-tournament" data-id="'+escapeHtml(t.id)+'">Eliminar</button></div>':'')+
       '</div>'+
       heroHtml+
@@ -957,6 +1036,15 @@
         '<div class="field"><label>Fecha</label><input type="date" required value="'+escapeHtml(d.date)+'" oninput="window.__updateMeta(\'date\',this.value)"></div>'+
         '<div class="field"><label>Nombre</label><input type="text" placeholder="Fecha '+(state.tournaments.length+1)+'" value="'+escapeHtml(d.name)+'" oninput="window.__updateMeta(\'name\',this.value)"></div>'+
         '<div class="field"><label>Formato</label><select class="select-filter" onchange="window.__updateMeta(\'format\',this.value)">'+FORMAT_OPTIONS.map(function(f){return '<option value="'+f.slug+'" '+(f.slug===d.format?"selected":"")+'>'+escapeHtml(f.label)+'</option>';}).join("")+'</select></div>'+
+        (seasonsEnabled(d.format) ? (
+          '<div class="field"><label>Season</label><select class="select-filter" onchange="window.__updateMeta(\'season\',this.value)">'+
+            '<option value="">Sin season</option>'+
+            seasonsFor(state, d.format).map(function(s){
+              var locked = s.completed && s.id!==d.seasonOrig;
+              return '<option value="'+escapeHtml(s.id)+'" '+(s.id===d.season?"selected":"")+(locked?" disabled":"")+'>'+escapeHtml(seasonLabel(s))+(s.completed?" (completada)":"")+'</option>';
+            }).join("")+
+          '</select></div>'
+        ) : "")+
       '</div>'+
       '<div class="rows-head"><span></span><span>Jugador</span><span>Mazo</span><span>Puntos</span><span></span></div>'+
       '<div id="rows-container">'+rowsHtml+'</div>'+
@@ -1015,6 +1103,51 @@
         '<button type="button" class="btn" onclick="window.__closePhoto()">Cancelar</button>'+
         '<button type="submit" class="btn btn-primary">Guardar</button>'+
       '</div></form></div></div>';
+  }
+
+  function renderSeasonsModal(state){
+    if(!ui.seasonsOpen || !writable) return "";
+    var slug = currentFormat;
+    var seasons = seasonsFor(state, slug);
+    var dates = state.tournaments.slice().sort(function(a,b){ return a.date<b.date?1:-1; });
+    var counts = {};
+    dates.forEach(function(t){ if(t.seasonId) counts[t.seasonId] = (counts[t.seasonId]||0)+1; });
+    var seasonRows = seasons.slice().reverse().map(function(s){
+      var n = counts[s.id]||0;
+      return '<div class="season-row">'+
+        '<strong style="flex:1;min-width:140px">'+escapeHtml(seasonLabel(s))+'</strong>'+
+        '<span class="pill">'+n+' fecha'+(n===1?'':'s')+'</span>'+
+        '<span class="season-badge'+(s.completed?' done':'')+'">'+(s.completed?'Completada':'En curso')+'</span>'+
+        '<button type="button" class="btn btn-sm" data-action="toggle-season" data-id="'+escapeHtml(s.id)+'">'+(s.completed?'Reabrir':'Marcar completada')+'</button>'+
+        (n===0 ? '<button type="button" class="btn btn-ghost btn-sm btn-danger" data-action="delete-season" data-id="'+escapeHtml(s.id)+'" title="Eliminar season vacía">✕</button>' : '')+
+      '</div>';
+    }).join("") || '<div class="settings-hint">Todavía no hay seasons. Creá la primera abajo.</div>';
+    var dateRows = dates.map(function(t){
+      return '<div class="season-row">'+
+        '<span style="flex:1;min-width:150px">'+fmtDate(t.date)+' · '+escapeHtml(t.name||"Fecha")+'</span>'+
+        '<select class="select-filter" onchange="window.__assignSeason(\''+escapeHtml(t.id)+'\',this.value)">'+
+          '<option value="">Sin season</option>'+
+          seasons.map(function(s){
+            var locked = s.completed && s.id!==t.seasonId;
+            return '<option value="'+escapeHtml(s.id)+'" '+(s.id===t.seasonId?'selected':'')+(locked?' disabled':'')+'>'+escapeHtml(seasonLabel(s))+(s.completed?' (completada)':'')+'</option>';
+          }).join("")+
+        '</select></div>';
+    }).join("") || '<div class="settings-hint">No hay fechas cargadas.</div>';
+    var nextNum = seasons.length ? seasons[seasons.length-1].number+1 : 1;
+    return '<div class="modal-backdrop" data-action="backdrop-seasons">'+
+      '<div class="modal" role="dialog" aria-modal="true" style="max-width:640px">'+
+      '<h3>Gestionar seasons</h3>'+
+      '<div class="settings-hint">Una season completada no admite más fechas (ni nuevas ni movidas desde otra season). Podés reabrirla cuando quieras.</div>'+
+      seasonRows+
+      '<form onsubmit="return window.__createSeason(event)" style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">'+
+        '<input type="text" style="flex:1;min-width:180px" placeholder="Nombre opcional (Season '+nextNum+')" value="'+escapeHtml(ui.seasonNewName)+'" oninput="window.__seasonNameDraft(this.value)">'+
+        '<button type="submit" class="btn btn-primary btn-sm" '+(ui.saving?'disabled':'')+'>+ Nueva season</button>'+
+      '</form>'+
+      '<h3 style="margin-top:24px">Fechas por season</h3>'+
+      dateRows+
+      (ui.seasonsError? '<div class="field-error">'+escapeHtml(ui.seasonsError)+'</div>':'')+
+      '<div class="modal-actions"><button type="button" class="btn" data-action="close-seasons">Cerrar</button></div>'+
+      '</div></div>';
   }
 
   function renderConfirmModal(){
@@ -1226,7 +1359,7 @@
     return renderTopbar(route)+
       '<main>'+main+'</main>'+
       '<footer class="credit">Magic Delta · Ligas de Magic Zarate/Campana</footer>'+
-      renderModal(scoped)+renderSettings(scoped)+renderPhotoModal(scoped)+renderLoginModal()+renderAccountsModal(scoped)+renderUpcomingModal(scoped)+renderGalleryModal(scoped)+renderUpdateEmailModal()+renderConfirmModal()+
+      renderModal(scoped)+renderSettings(scoped)+renderSeasonsModal(scoped)+renderPhotoModal(scoped)+renderLoginModal()+renderAccountsModal(scoped)+renderUpcomingModal(scoped)+renderGalleryModal(scoped)+renderUpdateEmailModal()+renderConfirmModal()+
       (ui.toast? '<div class="toast">'+escapeHtml(ui.toast)+'</div>':'');
   }
 
@@ -1269,14 +1402,17 @@
     return Promise.all([
       supabase.from("players").select("id,name,photo_url,user_id,notify_email"),
       supabase.from("format_config").select("format_id,champion_bonus,subcampeon_bonus"),
-      supabase.from("tournaments").select("id,format_id,date,name,champion_id,subcampeon_id,top4_extra_ids,example,created_at"),
+      supabase.from("tournaments").select("id,format_id,date,name,champion_id,subcampeon_id,top4_extra_ids,example,created_at,season_id"),
       supabase.from("standings").select("tournament_id,player_id,deck,points"),
       supabase.from("events").select("id,format_id,date,name,notes"),
-      supabase.from("event_registrations").select("event_id,player_id")
+      supabase.from("event_registrations").select("event_id,player_id"),
+      supabase.from("seasons").select("id,format_id,number,name,completed")
     ]).then(function(results){
       results.forEach(function(r){ if(r.error) throw r.error; });
       var players = results[0].data, configs = results[1].data, tournaments = results[2].data, standings = results[3].data;
       var events = results[4].data, registrations = results[5].data;
+      var seasonsOut = (results[6].data||[]).map(function(s){ return {id:s.id, format:s.format_id, number:s.number, name:s.name, completed:!!s.completed}; })
+        .sort(function(a,b){ return a.number-b.number; });
       var playerById = {}; players.forEach(function(p){ playerById[p.id] = p; });
       var nameOf = function(id){ return (id && playerById[id]) ? playerById[id].name : ""; };
       var playerPhotos = {};
@@ -1289,7 +1425,7 @@
       });
       var tournamentsOut = tournaments.map(function(t){
         return {
-          id: t.id, format: t.format_id, date: t.date, name: t.name, example: !!t.example, createdAt: t.created_at||"",
+          id: t.id, format: t.format_id, date: t.date, name: t.name, example: !!t.example, createdAt: t.created_at||"", seasonId: t.season_id||"",
           champion: nameOf(t.champion_id), subcampeon: nameOf(t.subcampeon_id),
           top4Extra: (t.top4_extra_ids||[]).map(nameOf).filter(Boolean),
           standings: standingsByTournament[t.id] || []
@@ -1310,7 +1446,7 @@
           registeredIds: playerIds, registeredNames: playerIds.map(nameOf).filter(Boolean)
         };
       }).sort(function(a,b){ return a.date<b.date?-1:1; });
-      return { meta:{title:"Magic Delta"}, playerPhotos: playerPhotos, tournaments: tournamentsOut, configByFormat: configByFormat, playersFull: playersFull, events: eventsOut };
+      return { meta:{title:"Magic Delta"}, playerPhotos: playerPhotos, tournaments: tournamentsOut, configByFormat: configByFormat, playersFull: playersFull, events: eventsOut, seasons: seasonsOut };
     });
   }
 
@@ -1568,7 +1704,10 @@
 
   window.__openCreateForm = function(){
     ui.modalMode = "create"; ui.editingId = null; ui.formError = "";
-    ui.draft = { date:"", name:"", format:(currentView==="liga"?LIGA_SLUG:currentFormat), rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"" };
+    var fmt0 = (currentView==="liga"?LIGA_SLUG:currentFormat);
+    var os = seasonsEnabled(fmt0) ? openSeasonFor(STATE, fmt0) : null;
+    var selS = seasonsEnabled(fmt0) ? seasonsFor(STATE, fmt0).find(function(s){ return s.id===ui.seasonSel && !s.completed; }) : null;
+    ui.draft = { date:"", name:"", format:fmt0, rows:[{player:"",deck:"",points:""}], hasTop4:false, champion:"", subcampeon:"", top4a:"", top4b:"", season:(selS||os||{}).id||"", seasonOrig:"" };
     ui.modalOpen = true; render();
   };
   window.__openEditForm = function(id){
@@ -1580,7 +1719,8 @@
       date: t.date, name: t.name||"", format: t.format||currentFormat,
       rows: t.standings.map(function(s){ return {player:s.player||"",deck:s.deck||"",points: (s.points==null?"":s.points)}; }),
       hasTop4: !!t.champion, champion: t.champion||"", subcampeon: t.subcampeon||"",
-      top4a: extra[0]||"", top4b: extra[1]||""
+      top4a: extra[0]||"", top4b: extra[1]||"",
+      season: t.seasonId||"", seasonOrig: t.seasonId||""
     };
     ui.modalOpen = true; render();
   };
@@ -1591,7 +1731,15 @@
     ui.draft.rows.splice(idx,1); render();
   };
   window.__updateRow = function(idx, field, value){ ui.draft.rows[idx][field] = value; };
-  window.__updateMeta = function(field, value){ ui.draft[field] = value; if(field==="format") render(); };
+  window.__updateMeta = function(field, value){
+    ui.draft[field] = value;
+    if(field==="format"){
+      var os = seasonsEnabled(value) ? openSeasonFor(STATE, value) : null;
+      ui.draft.season = os ? os.id : "";
+      ui.draft.seasonOrig = "";
+      render();
+    }
+  };
   window.__toggleTop4 = function(checked){ ui.draft.hasTop4 = checked; render(); };
 
   window.__submitForm = function(ev){
@@ -1618,6 +1766,11 @@
         if(t) top4Extra.push(t);
       });
     }
+    var seasonId = seasonsEnabled(d.format) ? (d.season||"") : "";
+    if(seasonId && seasonId!==d.seasonOrig){
+      var chosen = (STATE.seasons||[]).find(function(s){ return s.id===seasonId; });
+      if(chosen && chosen.completed){ ui.formError="La "+seasonLabel(chosen)+" está completada y no admite más fechas."; render(); return false; }
+    }
     ui.formError = "";
 
     var isEdit = ui.modalMode==="edit";
@@ -1632,7 +1785,8 @@
           id: tid, format_id: fmt, date: d.date, name: tname,
           champion_id: champion ? idByName[champion] : null,
           subcampeon_id: subcampeon ? idByName[subcampeon] : null,
-          top4_extra_ids: top4Extra.map(function(n){return idByName[n];}).filter(Boolean)
+          top4_extra_ids: top4Extra.map(function(n){return idByName[n];}).filter(Boolean),
+          season_id: seasonId || null
         };
         return supabase.from("tournaments").upsert(payload).then(function(res){
           if(res.error) throw res.error;
@@ -2057,6 +2211,53 @@
     ui.settingsOpen = true; render();
   };
   window.__closeSettings = function(){ ui.settingsOpen = false; render(); };
+
+  // ---- seasons ----
+  window.__openSeasons = function(){ ui.seasonsOpen = true; ui.seasonsError = ""; render(); };
+  window.__closeSeasons = function(){ ui.seasonsOpen = false; render(); };
+  window.__seasonNameDraft = function(v){ ui.seasonNewName = v; };
+  window.__createSeason = function(ev){
+    ev.preventDefault();
+    var slug = currentFormat;
+    var list = seasonsFor(STATE, slug);
+    var num = list.length ? list[list.length-1].number+1 : 1;
+    var name = (ui.seasonNewName||"").trim() || ("Season "+num);
+    ui.seasonNewName = ""; ui.seasonsError = "";
+    runWrite(function(){
+      return supabase.from("seasons").insert({ format_id: slug, number: num, name: name, completed: false }).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+    return false;
+  };
+  window.__toggleSeason = function(id){
+    var s = (STATE.seasons||[]).find(function(x){ return x.id===id; });
+    if(!s) return;
+    runWrite(function(){
+      return supabase.from("seasons").update({ completed: !s.completed }).eq("id", id).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+  };
+  window.__deleteSeason = function(id){
+    var s = (STATE.seasons||[]).find(function(x){ return x.id===id; });
+    if(!s) return;
+    window.__askConfirm('¿Eliminar la '+seasonLabel(s)+'? No tiene fechas asignadas.', function(){
+      if(ui.seasonSel===id) ui.seasonSel = "all";
+      runWrite(function(){
+        return supabase.from("seasons").delete().eq("id", id).then(function(res){
+          if(res.error) throw res.error;
+        });
+      });
+    });
+  };
+  window.__assignSeason = function(tid, sid){
+    runWrite(function(){
+      return supabase.from("tournaments").update({ season_id: sid || null }).eq("id", tid).then(function(res){
+        if(res.error) throw res.error;
+      });
+    });
+  };
   window.__updateBonusDraft = function(field, val){ ui[field] = val; };
   window.__submitSettings = function(ev){
     ev.preventDefault();
@@ -2080,6 +2281,12 @@
     var action = el.getAttribute("data-action");
     if(action==="open-create") window.__openCreateForm();
     else if(action==="open-settings") window.__openSettings();
+    else if(action==="select-season"){ ui.seasonSel = el.getAttribute("data-id"); render(); }
+    else if(action==="open-seasons") window.__openSeasons();
+    else if(action==="close-seasons") window.__closeSeasons();
+    else if(action==="backdrop-seasons" && e.target===el) window.__closeSeasons();
+    else if(action==="toggle-season") window.__toggleSeason(el.getAttribute("data-id"));
+    else if(action==="delete-season") window.__deleteSeason(el.getAttribute("data-id"));
     else if(action==="edit-tournament"){ e.preventDefault(); window.__editTournamentAction(el.getAttribute("data-id")); }
     else if(action==="delete-tournament"){ e.preventDefault(); window.__deleteTournamentAction(el.getAttribute("data-id")); }
     else if(action==="clear-examples") window.__clearExamples();
